@@ -11,10 +11,10 @@ interface User {
 }
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  // const [loading, setLoading] = useState(false);
-  // const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   // Fetch current user data
   useEffect(() => {
@@ -35,44 +35,45 @@ export default function AdminPage() {
     }
   };
 
-  // const updateRole = async (role: 'BASIC' | 'DM') => {
-  //   if (!currentUser) return;
+  const updateRole = async (role: 'BASIC' | 'DM') => {
+    if (!currentUser) return;
 
-  //   setLoading(true);
-  //   setMessage('');
+    setLoading(true);
+    setMessage('');
 
-  //   try {
-  //     const response = await fetch('/api/user-role', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         userId: currentUser.id,
-  //         role: role,
-  //       }),
-  //     });
+    try {
+      const response = await fetch('/api/user-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          role: role,
+        }),
+      });
 
-  //     const data = await response.json();
+      const data = await response.json();
 
-  //     if (response.ok) {
-  //       setMessage(`Successfully updated role to ${role}`);
-  //       setCurrentUser({ ...currentUser, role });
-  //       // Update the session to reflect the new role
-  //       await update();
-  //       // Refresh the page to show the new dashboard
-  //       setTimeout(() => {
-  //         window.location.href = '/';
-  //       }, 1000);
-  //     } else {
-  //       setMessage(`Error: ${data.error}`);
-  //     }
-  //   } catch (error) {
-  //     setMessage('Failed to update role');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+      if (response.ok) {
+        setMessage(`Successfully updated role to ${role}`);
+        setCurrentUser({ ...currentUser, role });
+        // Update the session to reflect the new role
+        await update();
+        // Refresh the page to show the new dashboard
+        // setTimeout(() => {
+        //   window.location.href = '/';
+        // }, 1000);
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      setMessage('Failed to update role');
+      console.error('Failed to update role:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (status === 'loading') {
     return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -110,7 +111,7 @@ export default function AdminPage() {
                 </p>
               </div>
 
-              {/* <div className="space-y-4">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Change Role:</h3>
 
                 <div className="flex gap-4">
@@ -118,8 +119,8 @@ export default function AdminPage() {
                     onClick={() => updateRole('BASIC')}
                     disabled={loading || currentUser.role === 'BASIC'}
                     className={`px-4 py-2 rounded-md transition-colors ${currentUser.role === 'BASIC'
-                        ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
                       }`}
                   >
                     Set as Player (BASIC)
@@ -129,8 +130,8 @@ export default function AdminPage() {
                     onClick={() => updateRole('DM')}
                     disabled={loading || currentUser.role === 'DM'}
                     className={`px-4 py-2 rounded-md transition-colors ${currentUser.role === 'DM'
-                        ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'
                       }`}
                   >
                     Set as Dungeon Master (DM)
@@ -149,7 +150,7 @@ export default function AdminPage() {
                     {message}
                   </div>
                 )}
-              </div> */}
+              </div>
 
               <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                 <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Role Descriptions:</h4>

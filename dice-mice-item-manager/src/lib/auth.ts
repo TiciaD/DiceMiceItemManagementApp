@@ -39,7 +39,9 @@ function customDrizzleAdapter() {
 
 export const authOptions: NextAuthOptions = {
   // Only use adapter if database is available
-  adapter: process.env.TURSO_DATABASE_URL ? (customDrizzleAdapter() as any) : undefined,
+  adapter: process.env.TURSO_DATABASE_URL
+    ? (customDrizzleAdapter() as any)
+    : undefined,
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
