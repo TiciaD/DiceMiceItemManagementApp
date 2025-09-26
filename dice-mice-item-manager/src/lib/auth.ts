@@ -4,6 +4,7 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db } from '@/db/client';
 import { accounts, sessions, users, verificationTokens } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
+import type { AdapterUser } from 'next-auth/adapters';
 
 // Custom adapter that ensures ID generation
 function customDrizzleAdapter() {
@@ -16,7 +17,7 @@ function customDrizzleAdapter() {
 
   return {
     ...baseAdapter,
-    createUser: async (user: any) => {
+    createUser: async (user: Omit<AdapterUser, 'id'>) => {
       const userId = createId();
       const result = await db()
         .insert(users)
@@ -39,7 +40,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session: ({ session, user }: any) => ({
+    session: ({ session, user }: { session: any; user: any }) => ({
       ...session,
       user: {
         ...session.user,

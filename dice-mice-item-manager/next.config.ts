@@ -1,6 +1,18 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Configure external image domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        port: '',
+        pathname: '/avatars/**',
+      },
+    ],
+  },
+
   // Ensure environment variables are available at build time
   experimental: {
     // Enable server actions if needed
@@ -24,7 +36,7 @@ const nextConfig: NextConfig = {
   },
 
   // Webpack configuration for fallback when not using Turbopack
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Ignore LICENSE files in webpack builds
     config.module.rules.push({
       test: /\/(LICENSE|LICENCE)$/,
