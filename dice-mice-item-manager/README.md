@@ -176,6 +176,31 @@ npm start                      # Start production server
 
 Visit your production URL to see your application.
 
+## Troubleshooting
+
+### Vercel Build Errors with Turbopack
+
+If you encounter errors like `Parsing ecmascript source code failed` with LICENSE files when deploying to Vercel:
+
+1. **Use the standard build** (not Turbopack) for production:
+
+   ```bash
+   npm run build  # Instead of npm run build:turbo
+   ```
+
+2. **Vercel configuration** is included in `vercel.json` to use the standard build
+
+3. **For local development**, you can still use Turbopack:
+   ```bash
+   npm run dev  # Uses Turbopack for faster dev builds
+   ```
+
+### Build Scripts Available
+
+- `npm run build` - Standard Next.js build (recommended for production)
+- `npm run build:turbo` - Turbopack build (faster, but may have issues with some packages)
+- `npm run build:production` - Production build with environment variables
+
 ## Features
 
 - ✅ Discord OAuth authentication

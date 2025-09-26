@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "build:production": "NODE_ENV=production next build --turbopack",
+    "build": "next build",
+    "build:turbo": "next build --turbopack",
+    "build:production": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
@@ -36,6 +37,7 @@
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
+    "raw-loader": "^4.0.2",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
     "typescript": "^5"
