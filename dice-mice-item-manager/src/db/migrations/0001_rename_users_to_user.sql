@@ -1,4 +1,3 @@
-ALTER TABLE `users` RENAME TO `user`;--> statement-breakpoint
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_account` (
 	`userId` text NOT NULL,

@@ -1,49 +1,102 @@
-import { AuthButton } from "@/components/AuthButton";
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import GuestHomeView from '@/components/home/GuestHomeView';
+import PlayerDashboard from '@/components/home/PlayerDashboard';
+import DMDashboard from '@/components/home/DMDashboard';
+
+interface UserWithRole {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  role: 'BASIC' | 'DM';
+}
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <header className="p-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          🎲 Dice Mice Item Manager
-        </h1>
-        <AuthButton />
-      </header>
+  const { data: session, status } = useSession();
+  const [userData, setUserData] = useState<UserWithRole | null>(null);
+  const [loading, setLoading] = useState(true);
 
-      <main className="container mx-auto px-6 py-12">
-        <div className="text-center max-w-3xl mx-auto">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-            Manage Your D&D Items with Ease
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Keep track of all your magical items, weapons, and equipment in one place.
-            Connect with Discord to get started!
-          </p>
+  // Fetch user data including role when session is available
+  useEffect(() => {
+    async function fetchUserData() {
+      if (status === 'loading') return;
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8">
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              Features
-            </h3>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-3xl mb-2">📦</div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">Item Management</h4>
-                <p className="text-gray-600 dark:text-gray-300">Track all your items with detailed information</p>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-2">🔐</div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">Discord Auth</h4>
-                <p className="text-gray-600 dark:text-gray-300">Secure login with your Discord account</p>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-2">☁️</div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">Cloud Storage</h4>
-                <p className="text-gray-600 dark:text-gray-300">Your data is safely stored in the cloud</p>
-              </div>
-            </div>
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/user-role');
+        if (response.ok) {
+          const data = await response.json();
+          setUserData({
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            image: session.user?.image,
+            role: data.user.role,
+          });
+        } else {
+          // Fallback to session data if API fails
+          setUserData({
+            id: session.user.id,
+            name: session.user?.name || '',
+            email: session.user?.email || '',
+            image: session.user?.image,
+            role: (session.user as any)?.role || 'BASIC',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        // Fallback to session data if API fails
+        setUserData({
+          id: session.user.id,
+          name: session.user?.name || '',
+          email: session.user?.email || '',
+          image: session.user?.image,
+          role: (session.user as any)?.role || 'BASIC',
+        });
+      }
+
+      setLoading(false);
+    }
+
+    fetchUserData();
+  }, [session, status]);
+
+  // Show loading spinner while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading...</p>
           </div>
         </div>
-      </main>
+      </div>
+    );
+  }
+
+  // Create enhanced session object for components
+  const enhancedSession = userData ? {
+    ...session,
+    user: userData
+  } : null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      {!enhancedSession ? (
+        <GuestHomeView />
+      ) : userData?.role === 'DM' ? (
+        <DMDashboard session={enhancedSession} />
+      ) : (
+        <PlayerDashboard session={enhancedSession} />
+      )}
     </div>
   );
 }

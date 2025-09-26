@@ -5,6 +5,7 @@ import { db } from '@/db/client';
 import { accounts, sessions, users, verificationTokens } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import type { AdapterUser } from 'next-auth/adapters';
+import { eq } from 'drizzle-orm';
 
 // Custom adapter that ensures ID generation
 function customDrizzleAdapter() {
@@ -24,6 +25,7 @@ function customDrizzleAdapter() {
         .values({
           ...user,
           id: userId,
+          role: 'BASIC', // Explicitly set default role for new users
         })
         .returning();
       return result[0];
