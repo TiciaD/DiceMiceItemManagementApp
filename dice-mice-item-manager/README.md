@@ -1,36 +1,212 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dice Mice Item Manager
 
-## Getting Started
+A D&D item management application with Discord OAuth authentication.
 
-First, run the development server:
+## Setup Instructions
+
+### 1. Discord OAuth Setup
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and give it a name (e.g., "Dice Mice Item Manager")
+3. Go to the "OAuth2" section in the sidebar
+4. Add a redirect URI: `http://localhost:3000/api/auth/callback/discord`
+5. Copy the Client ID and Client Secret
+6. Update your `.env.local` file with these values:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+DISCORD_CLIENT_ID="your_actual_client_id_here"
+DISCORD_CLIENT_SECRET="your_actual_client_secret_here"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Your `.env.local` file should contain:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# TursoDB Configuration
+TURSO_DATABASE_URL="your_turso_database_url"
+TURSO_AUTH_TOKEN="your_turso_auth_token"
 
-## Learn More
+# Discord OAuth
+DISCORD_CLIENT_ID="your_discord_client_id"
+DISCORD_CLIENT_SECRET="your_discord_client_secret"
 
-To learn more about Next.js, take a look at the following resources:
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_generated_secret"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Dice Mice Item Manager
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A D&D item management application with Discord OAuth authentication.
 
-## Deploy on Vercel
+## Setup Instructions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1. Discord OAuth Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and give it a name (e.g., "Dice Mice Item Manager")
+3. Go to the "OAuth2" section in the sidebar
+4. Add redirect URIs:
+   - For development: `http://localhost:3000/api/auth/callback/discord`
+   - For production: `https://your-domain.com/api/auth/callback/discord`
+5. Copy the Client ID and Client Secret
+6. Update your environment files with these values
+
+### 2. Environment Variables
+
+#### Development (`.env.local`)
+
+```bash
+# TursoDB Configuration
+TURSO_DATABASE_URL="your_dev_turso_database_url"
+TURSO_AUTH_TOKEN="your_dev_turso_auth_token"
+
+# Discord OAuth
+DISCORD_CLIENT_ID="your_discord_client_id"
+DISCORD_CLIENT_SECRET="your_discord_client_secret"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_generated_secret"
+```
+
+#### Production (`.env.production`)
+
+```bash
+# TursoDB Configuration
+TURSO_DATABASE_URL="your_production_turso_database_url"
+TURSO_AUTH_TOKEN="your_production_turso_auth_token"
+
+# Discord OAuth
+DISCORD_CLIENT_ID="your_production_discord_client_id"
+DISCORD_CLIENT_SECRET="your_production_discord_client_secret"
+
+# NextAuth
+NEXTAUTH_URL="https://your-production-domain.com"
+NEXTAUTH_SECRET="your_production_nextauth_secret"
+```
+
+**Important:** Always generate a new `NEXTAUTH_SECRET` for production using:
+
+```bash
+openssl rand -base64 32
+```
+
+### 3. Database Setup
+
+#### Development Database
+
+```bash
+# Generate migrations
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+
+# Open database studio
+npm run db:studio
+```
+
+#### Production Database
+
+```bash
+# Generate migrations for production
+npm run db:generate:production
+
+# Run migrations on production database
+npm run db:migrate:production
+
+# Open production database studio
+npm run db:studio:production
+```
+
+# Open production database studio
+
+npm run db:studio:production
+
+````
+
+### 4. Development Workflow
+
+```bash
+# Start development server
+npm run dev
+
+# Run database migrations (development)
+npm run db:migrate
+
+# Generate new migrations after schema changes
+npm run db:generate
+````
+
+### 5. Production Deployment
+
+#### Prerequisites
+
+1. Create a production TursoDB database
+2. Set up production Discord OAuth application
+3. Generate a secure `NEXTAUTH_SECRET`
+4. Create `.env.production` with production values
+
+#### Deployment Steps
+
+```bash
+# Deploy to production (runs migrations and builds)
+npm run deploy:production
+
+# Or manually:
+npm run db:migrate:production  # Run production migrations
+npm run build:production       # Build for production
+npm start                      # Start production server
+```
+
+#### Platform-Specific Deployment
+
+**Vercel:**
+
+- Add environment variables in Vercel dashboard
+- The build process will automatically use production environment variables
+
+**Other Platforms:**
+
+- Ensure `NODE_ENV=production` is set
+- Copy `.env.production` to your server
+- Run `npm run deploy:production`
+
+Visit your production URL to see your application.
+
+## Features
+
+- ✅ Discord OAuth authentication
+- ✅ TursoDB SQLite database integration
+- ✅ NextAuth.js session management
+- ✅ Drizzle ORM for database operations
+- ✅ Tailwind CSS for styling
+- ✅ TypeScript support
+- ✅ Environment-specific configuration
+- ✅ Production deployment workflow
+
+## Database Schema
+
+The application includes the following tables:
+
+- `users` - User account information
+- `accounts` - OAuth account linking
+- `sessions` - User sessions
+- `verificationTokens` - Email verification (if needed)
+
+## Next Steps
+
+1. Set up your Discord OAuth credentials
+2. Test the authentication flow
+3. Start building your item management features!
+
+## Technology Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Authentication**: NextAuth.js v4 with Discord provider
+- **Database**: TursoDB (SQLite)
+- **ORM**: Drizzle ORM
+- **Styling**: Tailwind CSS
+- **Language**: TypeScript
