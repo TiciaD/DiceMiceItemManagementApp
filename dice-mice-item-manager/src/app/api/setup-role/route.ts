@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/db/client';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // This is a one-time setup endpoint to add the role column
     const database = db();

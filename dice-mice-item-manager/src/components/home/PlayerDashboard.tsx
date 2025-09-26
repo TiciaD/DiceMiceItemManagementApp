@@ -1,7 +1,7 @@
 import { Session } from 'next-auth';
 
 interface PlayerDashboardProps {
-  session: Session;
+  session: Partial<Session>;
 }
 
 export default function PlayerDashboard({ session }: PlayerDashboardProps) {

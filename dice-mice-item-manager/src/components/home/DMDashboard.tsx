@@ -1,7 +1,7 @@
 import { Session } from 'next-auth';
 
 interface DMDashboardProps {
-  session: Session;
+  session: Partial<Session>;
 }
 
 export default function DMDashboard({ session }: DMDashboardProps) {

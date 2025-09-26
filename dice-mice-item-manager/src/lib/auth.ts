@@ -5,7 +5,11 @@ import { db } from '@/db/client';
 import { accounts, sessions, users, verificationTokens } from '@/db/schema';
 import { createId } from '@paralleldrive/cuid2';
 import type { AdapterUser } from 'next-auth/adapters';
-import { eq } from 'drizzle-orm';
+
+// Extend AdapterUser to include our custom role field
+interface ExtendedAdapterUser extends Omit<AdapterUser, 'role'> {
+  role: 'BASIC' | 'DM';
+}
 
 // Custom adapter that ensures ID generation
 function customDrizzleAdapter() {
@@ -18,7 +22,7 @@ function customDrizzleAdapter() {
 
   return {
     ...baseAdapter,
-    createUser: async (user: Omit<AdapterUser, 'id'>) => {
+    createUser: async (user: Omit<ExtendedAdapterUser, 'id'>) => {
       const userId = createId();
       const result = await db()
         .insert(users)
@@ -35,7 +39,7 @@ function customDrizzleAdapter() {
 
 export const authOptions: NextAuthOptions = {
   // Only use adapter if database is available
-  adapter: process.env.TURSO_DATABASE_URL ? customDrizzleAdapter() : undefined,
+  adapter: process.env.TURSO_DATABASE_URL ? (customDrizzleAdapter() as any) : undefined,
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,

@@ -37,7 +37,7 @@ export default function Home() {
             id: data.user.id,
             name: data.user.name,
             email: data.user.email,
-            image: session.user?.image,
+            image: session.user?.image ?? 'https://cdn.discordapp.com/embed/avatars/0.png', // Default image if none
             role: data.user.role,
           });
         } else {
@@ -46,7 +46,7 @@ export default function Home() {
             id: session.user.id,
             name: session.user?.name || '',
             email: session.user?.email || '',
-            image: session.user?.image,
+            image: session.user?.image ?? 'https://cdn.discordapp.com/embed/avatars/0.png', // Default image if none
             role: (session.user as any)?.role || 'BASIC',
           });
         }
@@ -57,7 +57,7 @@ export default function Home() {
           id: session.user.id,
           name: session.user?.name || '',
           email: session.user?.email || '',
-          image: session.user?.image,
+          image: session.user?.image ?? 'https://cdn.discordapp.com/embed/avatars/0.png', // Default image if none
           role: (session.user as any)?.role || 'BASIC',
         });
       }

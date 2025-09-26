@@ -11,7 +11,7 @@ export default function CreateMagicItem() {
           </p>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
             <p className="text-gray-600 dark:text-gray-300">
-              This page is under construction. Here you'll be able to create custom magic items with detailed descriptions, properties, and effects.
+              This page is under construction. Here you&apos;ll be able to create custom magic items with detailed descriptions, properties, and effects.
             </p>
           </div>
         </div>
