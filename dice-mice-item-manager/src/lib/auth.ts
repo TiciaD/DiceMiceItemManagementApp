@@ -32,7 +32,8 @@ function customDrizzleAdapter() {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: customDrizzleAdapter(),
+  // Only use adapter if database is available
+  adapter: process.env.TURSO_DATABASE_URL ? customDrizzleAdapter() : undefined,
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -44,7 +45,7 @@ export const authOptions: NextAuthOptions = {
       ...session,
       user: {
         ...session.user,
-        id: user.id,
+        id: user?.id,
       },
     }),
   },
@@ -57,7 +58,13 @@ export const authOptions: NextAuthOptions = {
       console.warn('NextAuth Warning:', code);
     },
     debug(code, metadata) {
-      console.log('NextAuth Debug:', code, metadata);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('NextAuth Debug:', code, metadata);
+      }
     },
+  },
+  // Add better error pages
+  pages: {
+    error: '/auth/error', // We'll create this page
   },
 };
