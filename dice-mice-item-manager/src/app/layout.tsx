@@ -17,9 +17,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Dice Mice Item Manager",
   description: "Manage your Dice Mice items with Discord authentication",
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 export default function RootLayout({
