@@ -1,61 +1,54 @@
 'use client';
 
 import { useState } from 'react';
-import { SpellCard } from './SpellCard';
-import { SpellDetailsModal } from './SpellDetailsModal';
-import type { SpellTemplateWithDetails } from '@/types/spells';
-import { CreateScrollModal } from './CreateScrollModal';
+import { ScrollWithTemplate } from '@/types/spells';
+import { UserScrollCard } from './UserScrollCard';
+import { UserScrollDetailsModal } from './UserScrollDetailsModal';
 
-interface SpellsSectionProps {
-  templates: SpellTemplateWithDetails[];
+interface MyScrollsSectionProps {
+  scrolls: ScrollWithTemplate[];
+  onScrollConsumed: (scroll: ScrollWithTemplate) => void;
 }
 
-export function SpellsSection({ templates }: SpellsSectionProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<SpellTemplateWithDetails | null>(null);
+export function MyScrollsSection({ scrolls, onScrollConsumed }: MyScrollsSectionProps) {
+  const [selectedScroll, setSelectedScroll] = useState<ScrollWithTemplate | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isCreateScrollModalOpen, setIsCreateScrollModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedSchool, setSelectedSchool] = useState<string>('all');
-  const [discoveredFilter, setDiscoveredFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Get unique levels and schools for filters
-  const uniqueLevels = [...new Set(templates.map(t => t.level))].sort((a, b) => a - b);
-  const uniqueSchools = [...new Set(templates.map(t => t.school))].sort();
+  const uniqueLevels = [...new Set(scrolls.map(s => s.template.level))].sort((a, b) => a - b);
+  const uniqueSchools = [...new Set(scrolls.map(s => s.template.school))].sort();
 
-  // Filter templates based on search and filters
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.baseEffect.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.school.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter scrolls based on search and filters
+  const filteredScrolls = scrolls.filter(scroll => {
+    const matchesSearch = scroll.template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scroll.template.school.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scroll.craftedBy.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesLevel = selectedLevel === 'all' || template.level === parseInt(selectedLevel);
-    const matchesSchool = selectedSchool === 'all' || template.school === selectedSchool;
-    const matchesDiscovered = discoveredFilter === 'all' ||
-      (discoveredFilter === 'discovered' && template.isDiscovered) ||
-      (discoveredFilter === 'undiscovered' && !template.isDiscovered);
+    const matchesLevel = selectedLevel === 'all' || scroll.template.level === parseInt(selectedLevel);
+    const matchesSchool = selectedSchool === 'all' || scroll.template.school === selectedSchool;
+    const matchesStatus = statusFilter === 'all' ||
+      (statusFilter === 'available' && !scroll.consumedBy) ||
+      (statusFilter === 'consumed' && scroll.consumedBy);
 
-    return matchesSearch && matchesLevel && matchesSchool && matchesDiscovered;
+    return matchesSearch && matchesLevel && matchesSchool && matchesStatus;
   });
 
-  const handleTemplateClick = (template: SpellTemplateWithDetails) => {
-    setSelectedTemplate(template);
+  const handleScrollClick = (scroll: ScrollWithTemplate) => {
+    setSelectedScroll(scroll);
     setIsDetailsModalOpen(true);
   };
 
-  const handleCreateScroll = (template: SpellTemplateWithDetails) => {
-    setSelectedTemplate(template);
+  const handleScrollConsumed = (scroll: ScrollWithTemplate) => {
     setIsDetailsModalOpen(false);
-    setIsCreateScrollModalOpen(true);
+    setSelectedScroll(null);
+    onScrollConsumed(scroll);
   };
 
-  const handleScrollCreated = () => {
-    setIsCreateScrollModalOpen(false);
-    setSelectedTemplate(null);
-    // You might want to refresh data or show a success message here
-  };
-
-  if (templates.length === 0) {
+  if (scrolls.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-gray-400 dark:text-gray-500 mb-4">
@@ -64,10 +57,10 @@ export function SpellsSection({ templates }: SpellsSectionProps) {
           </svg>
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          No Spells Available
+          No Scrolls Found
         </h3>
         <p className="text-gray-500 dark:text-gray-400">
-          No spell templates have been added to the database yet.
+          You haven&apos;t created any scrolls yet. Visit the Compendium to create some!
         </p>
       </div>
     );
@@ -88,7 +81,7 @@ export function SpellsSection({ templates }: SpellsSectionProps) {
               </div>
               <input
                 type="text"
-                placeholder="Search spells..."
+                placeholder="Search scrolls..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -104,9 +97,9 @@ export function SpellsSection({ templates }: SpellsSectionProps) {
               onChange={(e) => setSelectedLevel(e.target.value)}
             >
               <option value="all">All Levels</option>
-              {uniqueLevels.sort().map(level => (
+              {uniqueLevels.map(level => (
                 <option key={level} value={level.toString()}>
-                  {`Level ${level}`}
+                  {level === 0 ? 'Cantrip' : `Level ${level}`}
                 </option>
               ))}
             </select>
@@ -128,16 +121,16 @@ export function SpellsSection({ templates }: SpellsSectionProps) {
             </select>
           </div>
 
-          {/* Discovery Filter */}
+          {/* Status Filter */}
           <div>
             <select
               className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              value={discoveredFilter}
-              onChange={(e) => setDiscoveredFilter(e.target.value)}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="all">All Spells</option>
-              <option value="discovered">Discovered Only</option>
-              <option value="undiscovered">Undiscovered Only</option>
+              <option value="all">All Scrolls</option>
+              <option value="available">Available</option>
+              <option value="consumed">Consumed</option>
             </select>
           </div>
         </div>
@@ -145,47 +138,37 @@ export function SpellsSection({ templates }: SpellsSectionProps) {
 
       {/* Results Count */}
       <div className="text-sm text-gray-600 dark:text-gray-400">
-        Showing {filteredTemplates.length} of {templates.length} spells
+        Showing {filteredScrolls.length} of {scrolls.length} scrolls
       </div>
 
-      {/* Spells Grid */}
-      {filteredTemplates.length > 0 ? (
+      {/* Scrolls Grid */}
+      {filteredScrolls.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredTemplates.map((template) => (
-            <SpellCard
-              key={template.id}
-              template={template}
-              onClick={handleTemplateClick}
+          {filteredScrolls.map((scroll) => (
+            <UserScrollCard
+              key={scroll.id}
+              scroll={scroll}
+              onClick={handleScrollClick}
             />
           ))}
         </div>
       ) : (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
-            No spells match your current filters.
+            No scrolls match your current filters.
           </p>
         </div>
       )}
 
-      {/* Modals */}
-      <SpellDetailsModal
-        template={selectedTemplate}
+      {/* Details Modal */}
+      <UserScrollDetailsModal
+        scroll={selectedScroll}
         isOpen={isDetailsModalOpen}
         onClose={() => {
           setIsDetailsModalOpen(false);
-          setSelectedTemplate(null);
+          setSelectedScroll(null);
         }}
-        onCreateScroll={handleCreateScroll}
-      />
-
-      <CreateScrollModal
-        template={selectedTemplate}
-        isOpen={isCreateScrollModalOpen}
-        onClose={() => {
-          setIsCreateScrollModalOpen(false);
-          setSelectedTemplate(null);
-        }}
-        onScrollCreated={handleScrollCreated}
+        onScrollConsumed={handleScrollConsumed}
       />
     </div>
   );

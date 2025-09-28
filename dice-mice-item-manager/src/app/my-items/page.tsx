@@ -3,14 +3,17 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { PotionWithTemplate } from '@/types/potions';
+import { ScrollWithTemplate } from '@/types/spells';
 import { MyPotionsSection } from '@/components/my-items/MyPotionsSection';
+import { MyScrollsSection } from '@/components/my-items/MyScrollsSection';
 
-type ItemCategory = 'potions' | 'spells' | 'weapons' | 'shields';
+type ItemCategory = 'potions' | 'scrolls' | 'spells' | 'weapons' | 'shields';
 
 export default function MyItems() {
   const { data: session, status } = useSession();
   const [activeCategory, setActiveCategory] = useState<ItemCategory | null>(null);
   const [potions, setPotions] = useState<PotionWithTemplate[]>([]);
+  const [scrolls, setScrolls] = useState<ScrollWithTemplate[]>([]);
   const [loading, setLoading] = useState(false);
 
   const categories = [
@@ -19,6 +22,13 @@ export default function MyItems() {
       title: '🧪 Potions',
       description: 'Your alchemical collection',
       icon: '🧪',
+      available: true
+    },
+    {
+      id: 'scrolls' as const,
+      title: '📜 Scrolls',
+      description: 'Your spell scrolls',
+      icon: '📜',
       available: true
     },
     {
@@ -59,6 +69,21 @@ export default function MyItems() {
     }
   };
 
+  const fetchScrolls = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/my-scrolls');
+      if (response.ok) {
+        const userScrolls = await response.json();
+        setScrolls(userScrolls);
+      }
+    } catch (error) {
+      console.error('Error fetching scrolls:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCategoryClick = async (categoryId: ItemCategory) => {
     if (!categories.find(c => c.id === categoryId)?.available) {
       return; // Don't allow clicking on unavailable categories
@@ -74,14 +99,27 @@ export default function MyItems() {
     // Load data based on category
     if (categoryId === 'potions') {
       await fetchPotions();
+    } else if (categoryId === 'scrolls') {
+      await fetchScrolls();
     }
   };
 
   const handlePotionConsumed = (potion: PotionWithTemplate) => {
-    // TODO: Implement potion consumption API call
-    console.log('Potion consumed:', potion);
-    // For now, just refetch the potions
-    fetchPotions();
+    // Update the local state to reflect the consumption
+    setPotions(potions.map(p =>
+      p.id === potion.id
+        ? { ...p, ...potion }  // Update with consumed data from the API
+        : p
+    ));
+  };
+
+  const handleScrollConsumed = (scroll: ScrollWithTemplate) => {
+    // Update the local state to reflect the consumption
+    setScrolls(scrolls.map(s =>
+      s.id === scroll.id
+        ? { ...s, ...scroll }  // Update with consumed data from the API
+        : s
+    ));
   };
 
   const renderCategoryContent = () => {
@@ -98,6 +136,19 @@ export default function MyItems() {
           <MyPotionsSection
             potions={potions}
             onPotionConsumed={handlePotionConsumed}
+          />
+        );
+
+      case 'scrolls':
+        return loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading scrolls...</span>
+          </div>
+        ) : (
+          <MyScrollsSection
+            scrolls={scrolls}
+            onScrollConsumed={handleScrollConsumed}
           />
         );
 

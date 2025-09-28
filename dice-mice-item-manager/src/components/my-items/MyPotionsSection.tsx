@@ -41,8 +41,8 @@ export function MyPotionsSection({ potions, onPotionConsumed }: MyPotionsSection
   };
 
   const handleConsumePotion = async (potion: PotionWithTemplate) => {
-    // TODO: Implement consume potion functionality
-    console.log('Consuming potion:', potion);
+    // The consumption is handled in the modal, we just need to update our local state
+    // and trigger the parent component's callback
     onPotionConsumed(potion);
     setIsDetailsModalOpen(false);
   };

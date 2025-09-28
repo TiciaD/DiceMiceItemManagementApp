@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { SpellTemplateWithDetails, schoolColors, spellLevelColors } from '@/types/spells';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
@@ -19,25 +18,15 @@ export function SpellDetailsModal({
   onCreateScroll
 }: SpellDetailsModalProps) {
   const { data: session, status } = useSession();
-  const [isCreating, setIsCreating] = useState(false);
 
   if (!isOpen || !template) return null;
 
   const schoolClass = schoolColors[template.school as keyof typeof schoolColors] || schoolColors.evocation;
   const levelClass = spellLevelColors[template.level as keyof typeof spellLevelColors] || spellLevelColors[0];
 
-  const handleCreateScroll = async () => {
-    if (!template || isCreating) return;
-
-    setIsCreating(true);
-    try {
-      await onCreateScroll(template);
-      onClose();
-    } catch (error) {
-      console.error('Failed to create scroll:', error);
-    } finally {
-      setIsCreating(false);
-    }
+  const handleCreateScroll = () => {
+    if (!template) return;
+    onCreateScroll(template);
   };
 
   return (
@@ -183,10 +172,9 @@ export function SpellDetailsModal({
             ) : session ? (
               <button
                 onClick={handleCreateScroll}
-                disabled={isCreating}
-                className="cursor-pointer flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="cursor-pointer flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                {isCreating ? 'Creating...' : '📜 Create Scroll'}
+                📜 Create Scroll
               </button>
             ) : (
               <div className="flex-1 text-center py-2 px-4 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">

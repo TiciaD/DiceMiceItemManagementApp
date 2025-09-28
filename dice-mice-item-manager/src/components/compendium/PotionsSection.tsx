@@ -123,7 +123,7 @@ export function PotionsSection({ templates }: PotionsSectionProps) {
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Levels</option>
-              {levels.map(level => (
+              {levels.sort().map(level => (
                 <option key={level} value={level}>
                   {level}
                 </option>

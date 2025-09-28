@@ -1,6 +1,7 @@
 'use client';
 
 import { PotionWithTemplate, rarityColors, potencyColors, potencyDisplayNames } from '@/types/potions';
+import { formatInGameDateShort } from '@/lib/dateUtils';
 
 interface UserPotionCardProps {
   potion: PotionWithTemplate;
@@ -12,9 +13,7 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
   const potencyClass = potencyColors[potion.craftedPotency] || potencyColors.success;
 
   const formatDate = (date: Date | string | number | null) => {
-    if (!date) return 'Unknown';
-    const d = new Date(date);
-    return d.toLocaleDateString();
+    return formatInGameDateShort(date);
   };
 
   return (
@@ -61,14 +60,14 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
           <span className="font-medium">Crafted by:</span> {potion.craftedBy}
         </div>
         <div>
-          <span className="font-medium">Crafted on:</span> {formatDate(potion.craftedAt)}
+          <span className="font-medium">In-Game Date:</span> {formatDate(potion.craftedAt)}
         </div>
       </div>
 
       {potion.consumedBy && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-sm">
           <div className="text-red-800 dark:text-red-200">
-            <strong>Consumed</strong> by {potion.consumedBy} on {formatDate(potion.consumedAt)}
+            <strong>Consumed</strong> by {potion.consumedBy} on {formatDate(potion.consumedAt)} (In-Game)
           </div>
         </div>
       )}

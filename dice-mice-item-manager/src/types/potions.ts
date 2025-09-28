@@ -29,7 +29,6 @@ export const rarityColors = {
 
 // Potency types
 export type PotencyType =
-  | 'critical_fail'
   | 'fail'
   | 'success'
   | 'critical_success'
@@ -37,7 +36,6 @@ export type PotencyType =
 
 // Potency display names
 export const potencyDisplayNames = {
-  critical_fail: 'Critical Fail',
   fail: 'Fail',
   success: 'Success',
   critical_success: 'Critical Success',
@@ -46,7 +44,6 @@ export const potencyDisplayNames = {
 
 // Potency colors for UI
 export const potencyColors = {
-  critical_fail: 'bg-red-200 text-red-900 border-red-400',
   fail: 'bg-red-100 text-red-800 border-red-300',
   success: 'bg-green-100 text-green-800 border-green-300',
   critical_success: 'bg-blue-100 text-blue-800 border-blue-300',

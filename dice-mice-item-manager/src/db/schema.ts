@@ -98,13 +98,7 @@ export const potions = sqliteTable('potions', {
     .notNull()
     .references(() => potionTemplates.id, { onDelete: 'cascade' }),
   craftedPotency: text('crafted_potency')
-    .$type<
-      | 'critical_fail'
-      | 'fail'
-      | 'success'
-      | 'critical_success'
-      | 'success_unknown'
-    >()
+    .$type<'fail' | 'success' | 'critical_success' | 'success_unknown'>()
     .notNull(),
   consumedBy: text('consumed_by'), // User ID or character name
   consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }), // When consumed

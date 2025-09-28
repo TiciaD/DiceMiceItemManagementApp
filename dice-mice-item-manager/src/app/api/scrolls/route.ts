@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db/client';
-import { scrolls, userScrolls } from '@/db/schema';
+import { scrolls, userScrolls, spellTemplates } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,10 +16,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { spellTemplateId, material, craftedBy, weight } =
+    const { spellTemplateId, material, craftedBy, crafterLevel, weight } =
       await request.json();
 
-    if (!spellTemplateId || !material || !craftedBy || weight == null) {
+    if (
+      !spellTemplateId ||
+      !material ||
+      !craftedBy ||
+      !crafterLevel ||
+      weight == null
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -26,6 +33,30 @@ export async function POST(request: NextRequest) {
     }
 
     const database = db();
+
+    // Validate crafting level restrictions
+    const [spellTemplate] = await database
+      .select()
+      .from(spellTemplates)
+      .where(eq(spellTemplates.id, spellTemplateId))
+      .limit(1);
+
+    if (!spellTemplate) {
+      return NextResponse.json(
+        { error: 'Spell template not found' },
+        { status: 404 }
+      );
+    }
+
+    const maxCraftableLevel = crafterLevel + 1;
+    if (spellTemplate.level > maxCraftableLevel) {
+      return NextResponse.json(
+        {
+          error: `Cannot craft level ${spellTemplate.level} spell with crafter level ${crafterLevel}. Maximum craftable: level ${maxCraftableLevel}`,
+        },
+        { status: 400 }
+      );
+    }
 
     // Create the scroll
     const [scroll] = await database
