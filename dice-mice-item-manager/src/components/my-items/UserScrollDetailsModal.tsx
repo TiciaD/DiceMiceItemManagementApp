@@ -83,7 +83,7 @@ export function UserScrollDetailsModal({
               </h2>
               <div className="flex gap-2 flex-wrap">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${levelClass}`}>
-                  {scroll.template.level === 0 ? 'Cantrip' : `Level ${scroll.template.level}`}
+                  {`Level ${scroll.template.level}`}
                 </span>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${schoolClass}`}>
                   {scroll.template.school.charAt(0).toUpperCase() + scroll.template.school.slice(1)}
