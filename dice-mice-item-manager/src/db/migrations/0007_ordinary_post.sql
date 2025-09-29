@@ -1,0 +1,1 @@
+ALTER TABLE `potions` ADD `special_ingredient_details` text;

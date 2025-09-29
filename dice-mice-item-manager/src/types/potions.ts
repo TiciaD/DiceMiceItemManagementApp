@@ -59,4 +59,5 @@ export interface CreatePotionFormData {
   craftedAt: Date;
   craftedPotency: PotencyType;
   weight: number;
+  specialIngredientDetails?: string; // Optional details about the special ingredient used
 }

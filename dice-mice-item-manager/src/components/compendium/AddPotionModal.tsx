@@ -26,7 +26,8 @@ export function AddPotionModal({
     craftedBy: '',
     craftedAt: new Date(),
     craftedPotency: 'success',
-    weight: 0.33 // Default weight of all potions
+    weight: 0.33, // Default weight of all potions
+    specialIngredientDetails: '' // Default empty for special ingredient details
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CreatePotionFormData, string>>>({});
@@ -41,7 +42,8 @@ export function AddPotionModal({
         craftedBy: '',
         craftedAt: new Date(),
         craftedPotency: 'success',
-        weight: 0.33 // Default weight of all potions
+        weight: 0.33, // Default weight of all potions
+        specialIngredientDetails: '' // Default empty for special ingredient details
       });
       setErrors({});
     }
@@ -51,6 +53,7 @@ export function AddPotionModal({
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof CreatePotionFormData, string>> = {};
+    const selectedTemplateData = availableTemplates.find(t => t.id === formData.potionTemplateId);
 
     if (!formData.potionTemplateId) {
       newErrors.potionTemplateId = 'Please select a potion template';
@@ -60,6 +63,10 @@ export function AddPotionModal({
     }
     if (!formData.craftedBy.trim()) {
       newErrors.craftedBy = 'Crafter name is required';
+    }
+    // Require special ingredient details if the template has a special ingredient
+    if (selectedTemplateData?.specialIngredient && !formData.specialIngredientDetails?.trim()) {
+      newErrors.specialIngredientDetails = 'Special ingredient details are required for this potion';
     }
 
     setErrors(newErrors);
@@ -128,11 +135,13 @@ export function AddPotionModal({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">Select a potion type...</option>
-                {availableTemplates.map(template => (
-                  <option key={template.id} value={template.id}>
-                    {template.name} (Level {template.level})
-                  </option>
-                ))}
+                {availableTemplates
+                  .filter(template => template.isDiscovered)
+                  .map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} (Level {template.level})
+                    </option>
+                  ))}
               </select>
               {errors.potionTemplateId && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.potionTemplateId}</p>
@@ -255,6 +264,32 @@ export function AddPotionModal({
                 })}
               </div>
             </div>
+
+            {/* Special Ingredient Details - Only show if template has special ingredient */}
+            {selectedTemplateData?.specialIngredient && (
+              <div>
+                <label htmlFor="specialIngredientDetails" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Special Ingredient Details
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">
+                    (Required: {selectedTemplateData.specialIngredient})
+                  </span>
+                </label>
+                <input
+                  id="specialIngredientDetails"
+                  type="text"
+                  placeholder="e.g., 'Bird', 'Weasel', 'Perception', 'Survival'"
+                  value={formData.specialIngredientDetails || ''}
+                  onChange={(e) => setFormData({ ...formData, specialIngredientDetails: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Specify the exact ingredient used (e.g., &quot;Weasel&quot; for Bane potion, &quot;Perception&quot; for Talent potion)
+                </p>
+                {errors.specialIngredientDetails && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.specialIngredientDetails}</p>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">

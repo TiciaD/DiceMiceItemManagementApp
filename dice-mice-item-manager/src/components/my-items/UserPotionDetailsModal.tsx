@@ -194,16 +194,16 @@ export function UserPotionDetailsModal({
               <h4 className="font-medium text-gray-900 dark:text-white mb-1">Value</h4>
               <p className="text-gray-600 dark:text-gray-300">{potion.template.cost} gold pieces</p>
             </div>
+            {potion.specialIngredientDetails && (
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-1">Special Ingredient</h4>
+                <p className="text-gray-600 dark:text-gray-300">{potion.specialIngredientDetails}</p>
+              </div>
+            )}
             {potion.template.splitAmount && (
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-1">Split Amount</h4>
                 <p className="text-gray-600 dark:text-gray-300">{potion.template.splitAmount}</p>
-              </div>
-            )}
-            {potion.template.specialIngredient && (
-              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-1">Special Ingredient</h4>
-                <p className="text-gray-600 dark:text-gray-300">{potion.template.specialIngredient}</p>
               </div>
             )}
           </div>
@@ -324,7 +324,7 @@ export function UserPotionDetailsModal({
                       <button
                         onClick={handleConsume}
                         disabled={isProcessing || !consumedBy.trim() || !consumedAt}
-                        className="cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                        className="cursor-pointer disabled:cursor-not-allowed bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                       >
                         {isProcessing ? 'Consuming...' : 'Confirm Consumption'}
                       </button>

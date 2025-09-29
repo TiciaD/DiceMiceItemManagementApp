@@ -11,7 +11,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -42,10 +42,7 @@ export async function POST(
       .from(potions)
       .innerJoin(userPotions, eq(potions.id, userPotions.potionId))
       .where(
-        and(
-          eq(potions.id, potionId),
-          eq(userPotions.userId, session.user.email)
-        )
+        and(eq(potions.id, potionId), eq(userPotions.userId, session.user.id))
       )
       .limit(1);
 

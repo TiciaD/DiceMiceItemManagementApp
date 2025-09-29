@@ -18,6 +18,19 @@ export const users = sqliteTable('user', {
   role: text('role').$type<'BASIC' | 'DM'>().notNull().default('BASIC'),
 });
 
+export const houses = sqliteTable('house', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  motto: text('motto'),
+  bio: text('bio'),
+  gold: integer('gold').notNull().default(0),
+});
+
 export const accounts = sqliteTable(
   'account',
   {
@@ -84,6 +97,9 @@ export const potionTemplates = sqliteTable('potion_templates', {
   cost: integer('cost').notNull(),
   splitAmount: text('split_amount'),
   specialIngredient: text('special_ingredient'),
+  isDiscovered: integer('is_discovered', { mode: 'boolean' })
+    .notNull()
+    .default(false),
   // JSON field for additional properties like tags, filters, etc.
   propsJson: text('props_json'), // Store as JSON string
 });
@@ -107,6 +123,7 @@ export const potions = sqliteTable('potions', {
     () => new Date()
   ), // When crafted
   weight: real('weight').notNull(),
+  specialIngredientDetails: text('special_ingredient_details'), // Specific details about the special ingredient used (e.g., "Bird" for Bane potion, "Perception" for Talent potion)
 });
 
 // Junction table for user-potion ownership

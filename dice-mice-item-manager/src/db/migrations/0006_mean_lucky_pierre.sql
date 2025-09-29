@@ -1,0 +1,1 @@
+ALTER TABLE `potion_templates` ADD `is_discovered` integer DEFAULT false NOT NULL;

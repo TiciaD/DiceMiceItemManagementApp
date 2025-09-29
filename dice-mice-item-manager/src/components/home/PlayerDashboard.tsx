@@ -1,4 +1,5 @@
 import { Session } from 'next-auth';
+import HouseSection from './HouseSection';
 
 interface PlayerDashboardProps {
   session: Partial<Session>;
@@ -12,8 +13,14 @@ export default function PlayerDashboard({ session }: PlayerDashboardProps) {
           Welcome back, {session.user?.name}! 🎲
         </h1>
         <p className="text-gray-600 dark:text-gray-300">
-          Your personal D&D item dashboard
+          Your personal Dice Mice item dashboard
         </p>
+      </div>
+
+      {/* House Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your House</h2>
+        <HouseSection />
       </div>
 
       {/* Quick Stats */}
@@ -50,9 +57,9 @@ export default function PlayerDashboard({ session }: PlayerDashboardProps) {
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <div className="text-2xl mr-4">🛡️</div>
+            <div className="text-2xl mr-4">🪙</div>
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Armor & Gear</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gold</p>
               <p className="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
             </div>
           </div>

@@ -53,6 +53,11 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
         <div>
           <span className="font-medium">Value:</span> {potion.template.cost} gp
         </div>
+        {potion.specialIngredientDetails && (
+          <div className="col-span-2">
+            <span className="font-medium">Special Ingredient:</span> {potion.specialIngredientDetails}
+          </div>
+        )}
       </div>
 
       <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">
