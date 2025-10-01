@@ -16,6 +16,9 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
     return formatInGameDateShort(date);
   };
 
+  const isPartiallyConsumed = !!potion.usedAmount && !potion.isFullyConsumed;
+  const isFullyConsumed = potion.isFullyConsumed || (potion.consumedBy && !potion.template.splitAmount);
+
   return (
     <div
       className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer p-4 border border-gray-200 dark:border-gray-700"
@@ -53,6 +56,18 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
         <div>
           <span className="font-medium">Value:</span> {potion.template.cost} gp
         </div>
+        {potion.template.splitAmount && (
+          <div className="col-span-2">
+            <span className="font-medium">Split Amount:</span> {potion.template.splitAmount}
+            {isPartiallyConsumed && (
+              <div className="mt-1">
+                <span className="text-yellow-600 dark:text-yellow-400 text-xs">
+                  Used: {potion.usedAmount}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
         {potion.specialIngredientDetails && (
           <div className="col-span-2">
             <span className="font-medium">Special Ingredient:</span> {potion.specialIngredientDetails}
@@ -69,10 +84,21 @@ export function UserPotionCard({ potion, onClick }: UserPotionCardProps) {
         </div>
       </div>
 
-      {potion.consumedBy && (
+      {isPartiallyConsumed && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2 text-sm">
+          <div className="text-yellow-800 dark:text-yellow-200">
+            <strong>Partially Used</strong> by {potion.consumedBy} on {formatDate(potion.consumedAt)} (In-Game)
+          </div>
+          <div className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
+            Used: {potion.usedAmount}
+          </div>
+        </div>
+      )}
+
+      {isFullyConsumed && !isPartiallyConsumed && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2 text-sm">
           <div className="text-red-800 dark:text-red-200">
-            <strong>Consumed</strong> by {potion.consumedBy} on {formatDate(potion.consumedAt)} (In-Game)
+            <strong>Fully Consumed</strong> by {potion.consumedBy} on {formatDate(potion.consumedAt)} (In-Game)
           </div>
         </div>
       )}

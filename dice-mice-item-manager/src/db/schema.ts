@@ -124,6 +124,12 @@ export const potions = sqliteTable('potions', {
   ), // When crafted
   weight: real('weight').notNull(),
   specialIngredientDetails: text('special_ingredient_details'), // Specific details about the special ingredient used (e.g., "Bird" for Bane potion, "Perception" for Talent potion)
+  // Partial consumption tracking
+  usedAmount: text('used_amount'), // Amount consumed (e.g., "1 Dose", "1 die+1", "1 Turn")
+  remainingAmount: text('remaining_amount'), // Amount remaining (e.g., "2 Doses", "4 die+1", "3 Turns")
+  isFullyConsumed: integer('is_fully_consumed', { mode: 'boolean' })
+    .notNull()
+    .default(false), // Whether the potion is completely used up
 });
 
 // Junction table for user-potion ownership

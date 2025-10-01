@@ -24,11 +24,20 @@ export function UserPotionDetailsModal({
   const [consumedBy, setConsumedBy] = useState('');
   const [consumedAt, setConsumedAt] = useState('');
   const [actualPotency, setActualPotency] = useState<'success' | 'critical_success'>('success');
+  const [consumptionType, setConsumptionType] = useState<'partial' | 'full'>('partial');
+  const [customAmount, setCustomAmount] = useState('');
+  const [isSelling, setIsSelling] = useState(false);
+  const [sellPrice, setSellPrice] = useState(0);
+  const [updateHouseGold, setUpdateHouseGold] = useState(true);
 
   if (!isOpen || !potion) return null;
 
   const rarityClass = rarityColors[potion.template.rarity] || rarityColors.common;
   const potencyClass = potencyColors[potion.craftedPotency] || potencyColors.success;
+
+  const hasSplitAmount = !!potion.template.splitAmount;
+  const isPartiallyConsumed = !!potion.usedAmount && !potion.isFullyConsumed;
+  const isFullyConsumed = potion.isFullyConsumed || (potion.consumedBy && !hasSplitAmount);
 
   const formatDate = (date: Date | string | number | null) => {
     return formatInGameDate(date);
@@ -37,10 +46,28 @@ export function UserPotionDetailsModal({
   const handleStartConsume = () => {
     setIsConsuming(true);
     setConsumedAt(getCurrentInGameDate()); // Get current date in Eastern Time
+    // For partially consumed potions, pre-fill the consumer name
+    if (isPartiallyConsumed && potion.consumedBy) {
+      setConsumedBy(potion.consumedBy);
+    }
+    // Default to partial consumption if split amount is available
+    if (hasSplitAmount) {
+      setConsumptionType('partial');
+    } else {
+      setConsumptionType('full');
+    }
+  };
+
+  const handleStartSell = () => {
+    setIsSelling(true);
+    setSellPrice(potion.template.cost); // Default to template cost
   };
 
   const handleConsume = async () => {
     if (!consumedBy.trim() || !consumedAt) return;
+
+    const isFullConsumption = consumptionType === 'full';
+    const amountUsed = isFullConsumption ? 'Full Potion' : (customAmount.trim() || potion.template.splitAmount);
 
     setIsProcessing(true);
     try {
@@ -52,6 +79,8 @@ export function UserPotionDetailsModal({
         body: JSON.stringify({
           consumedBy: consumedBy.trim(),
           consumedAt,
+          amountUsed,
+          isFullConsumption,
           ...(potion.craftedPotency === 'success_unknown' ? { actualPotency } : {}),
         }),
       });
@@ -77,9 +106,49 @@ export function UserPotionDetailsModal({
     setConsumedBy('');
     setConsumedAt('');
     setActualPotency('success');
+    setConsumptionType('partial');
+    setCustomAmount('');
   };
 
-  const isConsumed = !!potion.consumedBy;
+  const handleSell = async () => {
+    if (sellPrice < 0) return;
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/potions/${potion.id}/sell`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sellPrice,
+          updateHouseGold,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to sell potion');
+      }
+
+      const result = await response.json();
+      alert(`Potion sold for ${sellPrice} gold pieces!${updateHouseGold ? ` Added to house treasury.` : ''}`);
+      onClose();
+      // Refresh the page or call a callback to update the list
+      window.location.reload();
+    } catch (error) {
+      console.error('Error selling potion:', error);
+      alert(error instanceof Error ? error.message : 'Failed to sell potion. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancelSell = () => {
+    setIsSelling(false);
+    setSellPrice(potion.template.cost);
+    setUpdateHouseGold(true);
+  };
 
   // Get the appropriate effect text based on crafted potency
   const getEffectText = () => {
@@ -130,12 +199,26 @@ export function UserPotionDetailsModal({
           </div>
 
           {/* Status Alert */}
-          {isConsumed && (
+          {isFullyConsumed && (
             <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <h3 className="text-red-800 dark:text-red-200 font-medium mb-1">Consumed</h3>
+              <h3 className="text-red-800 dark:text-red-200 font-medium mb-1">Fully Consumed</h3>
               <p className="text-red-700 dark:text-red-300 text-sm">
-                This potion was consumed by <strong>{potion.consumedBy}</strong> on {formatInGameDateTime(potion.consumedAt)} (Eastern Time)
+                This potion was consumed by <strong>{potion.consumedBy}</strong> on {formatDate(potion.consumedAt)}
               </p>
+            </div>
+          )}
+
+          {isPartiallyConsumed && (
+            <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <h3 className="text-yellow-800 dark:text-yellow-200 font-medium mb-1">Partially Consumed</h3>
+              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                <strong>{potion.usedAmount}</strong> used by <strong>{potion.consumedBy}</strong> on {formatDate(potion.consumedAt)}
+              </p>
+              {potion.remainingAmount && (
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
+                  <strong>Remaining:</strong> {potion.remainingAmount}
+                </p>
+              )}
             </div>
           )}
 
@@ -204,6 +287,13 @@ export function UserPotionDetailsModal({
               <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-1">Split Amount</h4>
                 <p className="text-gray-600 dark:text-gray-300">{potion.template.splitAmount}</p>
+                {isPartiallyConsumed && (
+                  <div className="mt-2 text-sm">
+                    <p className="text-yellow-600 dark:text-yellow-400">
+                      Used: {potion.usedAmount}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -227,15 +317,21 @@ export function UserPotionDetailsModal({
 
           {/* Actions */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-            {!isConsumed && onConsume && (
+            {!isFullyConsumed && onConsume && !isSelling && (
               <>
                 {!isConsuming ? (
                   <div className="flex gap-3">
                     <button
                       onClick={handleStartConsume}
-                      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                      className="cursor-pointer bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                     >
-                      🍺 Consume Potion
+                      🍺 {isPartiallyConsumed ? 'Use More' : 'Consume Potion'}
+                    </button>
+                    <button
+                      onClick={handleStartSell}
+                      className="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      💰 Sell Potion
                     </button>
                     {onEdit && (
                       <button
@@ -255,7 +351,7 @@ export function UserPotionDetailsModal({
                 ) : (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Consume Potion
+                      {isPartiallyConsumed ? 'Use More of Potion' : 'Consume Potion'}
                     </h3>
 
                     {/* Consumer Name */}
@@ -284,6 +380,63 @@ export function UserPotionDetailsModal({
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
                     </div>
+
+                    {/* Consumption Type for Split Amount Potions */}
+                    {hasSplitAmount && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          How much are you consuming? *
+                        </label>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          This potion can be split into multiple uses ({potion.template.splitAmount} each).
+                        </p>
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              value="partial"
+                              checked={consumptionType === 'partial'}
+                              onChange={(e) => setConsumptionType(e.target.value as 'partial' | 'full')}
+                              className="mr-2"
+                            />
+                            <span className="text-gray-900 dark:text-white">
+                              Partial use ({potion.template.splitAmount})
+                            </span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              value="full"
+                              checked={consumptionType === 'full'}
+                              onChange={(e) => setConsumptionType(e.target.value as 'partial' | 'full')}
+                              className="mr-2"
+                            />
+                            <span className="text-gray-900 dark:text-white">
+                              Consume entire potion
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Custom Amount Input for Partial Consumption */}
+                        {consumptionType === 'partial' && (
+                          <div className="mt-3">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Custom amount (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={customAmount}
+                              onChange={(e) => setCustomAmount(e.target.value)}
+                              placeholder={`Default: ${potion.template.splitAmount}`}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              e.g., "1 Dose", "2 die+1", "1 Turn"
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Success Unknown Handling */}
                     {potion.craftedPotency === 'success_unknown' && (
@@ -326,7 +479,8 @@ export function UserPotionDetailsModal({
                         disabled={isProcessing || !consumedBy.trim() || !consumedAt}
                         className="cursor-pointer disabled:cursor-not-allowed bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                       >
-                        {isProcessing ? 'Consuming...' : 'Confirm Consumption'}
+                        {isProcessing ? 'Processing...' :
+                          consumptionType === 'full' ? 'Consume Entire Potion' : 'Use Partial Amount'}
                       </button>
                       <button
                         onClick={handleCancelConsume}
@@ -341,7 +495,77 @@ export function UserPotionDetailsModal({
               </>
             )}
 
-            {isConsumed && (
+            {/* Sell Modal */}
+            {isSelling && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Sell Potion
+                </h3>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">⚠️ Warning</p>
+                  <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                    Once you sell this potion, it will be permanently removed from your inventory and cannot be recovered.
+                  </p>
+                </div>
+
+                {/* Sell Price */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sell Price (gold pieces) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={sellPrice}
+                    onChange={(e) => setSellPrice(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Default value: {potion.template.cost} gp (template cost)
+                  </p>
+                </div>
+
+                {/* Update House Gold */}
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={updateHouseGold}
+                      onChange={(e) => setUpdateHouseGold(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-gray-900 dark:text-white">
+                      Add gold to house treasury
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {updateHouseGold
+                      ? "The gold will be added to your house treasury. You must have a house to enable this option."
+                      : "The gold will not be tracked in the system."}
+                  </p>
+                </div>
+
+                {/* Confirm Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={handleSell}
+                    disabled={isProcessing || sellPrice < 0}
+                    className="cursor-pointer disabled:cursor-not-allowed bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                  >
+                    {isProcessing ? 'Selling...' : `Sell for ${sellPrice} gp`}
+                  </button>
+                  <button
+                    onClick={handleCancelSell}
+                    disabled={isProcessing}
+                    className="cursor-pointer px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {isFullyConsumed && (
               <div className="flex gap-3">
                 {onEdit && (
                   <button

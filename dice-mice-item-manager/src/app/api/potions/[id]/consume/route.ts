@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db/client';
-import { potions, userPotions } from '@/db/schema';
+import { potions, userPotions, potionTemplates } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function POST(
@@ -15,7 +15,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { consumedBy, consumedAt, actualPotency } = await request.json();
+    const {
+      consumedBy,
+      consumedAt,
+      actualPotency,
+      amountUsed,
+      isFullConsumption,
+    } = await request.json();
     const { id: potionId } = await params;
 
     if (!potionId) {
@@ -41,6 +47,10 @@ export async function POST(
       .select()
       .from(potions)
       .innerJoin(userPotions, eq(potions.id, userPotions.potionId))
+      .innerJoin(
+        potionTemplates,
+        eq(potions.potionTemplateId, potionTemplates.id)
+      )
       .where(
         and(eq(potions.id, potionId), eq(userPotions.userId, session.user.id))
       )
@@ -50,25 +60,48 @@ export async function POST(
       return NextResponse.json({ error: 'Potion not found' }, { status: 404 });
     }
 
-    // Check if already consumed
-    if (existingPotion[0].potions.consumedBy) {
+    const potion = existingPotion[0].potions;
+    const template = existingPotion[0].potion_templates;
+
+    // Check if already fully consumed
+    if (
+      potion.isFullyConsumed ||
+      (potion.consumedBy && !template.splitAmount)
+    ) {
       return NextResponse.json(
         { error: 'Potion has already been consumed' },
         { status: 400 }
       );
     }
 
+    // Determine consumption type
+    const isPartialConsumption = template.splitAmount && !isFullConsumption;
+
     // If the potion was success_unknown, we need to update the potency
     const updateData: any = {
-      consumedBy: consumedBy.trim(),
       consumedAt: new Date(consumedAt),
     };
 
+    if (isPartialConsumption) {
+      // For partial consumption, track the amount used and remaining
+      updateData.usedAmount = amountUsed || template.splitAmount;
+      updateData.remainingAmount = template.splitAmount; // This would need more complex logic for actual calculation
+      updateData.isFullyConsumed = false;
+
+      // Only set consumedBy on first consumption
+      if (!potion.consumedBy) {
+        updateData.consumedBy = consumedBy.trim();
+      }
+    } else {
+      // For full consumption
+      updateData.consumedBy = consumedBy.trim();
+      updateData.isFullyConsumed = true;
+      updateData.usedAmount = template.splitAmount || 'Full Potion';
+      updateData.remainingAmount = null;
+    }
+
     // If actualPotency is provided (for success_unknown potions), update the crafted potency
-    if (
-      actualPotency &&
-      existingPotion[0].potions.craftedPotency === 'success_unknown'
-    ) {
+    if (actualPotency && potion.craftedPotency === 'success_unknown') {
       if (!['success', 'critical_success'].includes(actualPotency)) {
         return NextResponse.json(
           { error: 'Invalid actual potency for unknown success potion' },
@@ -78,7 +111,7 @@ export async function POST(
       updateData.craftedPotency = actualPotency;
     }
 
-    // Update the potion to mark as consumed
+    // Update the potion
     const updatedPotion = await db()
       .update(potions)
       .set(updateData)
@@ -88,6 +121,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       potion: updatedPotion[0],
+      isPartialConsumption,
     });
   } catch (error) {
     console.error('Error consuming potion:', error);

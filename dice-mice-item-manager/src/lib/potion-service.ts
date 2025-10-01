@@ -57,6 +57,9 @@ export async function createPotionInstance(
         craftedAt: formData.craftedAt,
         weight: formData.weight,
         specialIngredientDetails: formData.specialIngredientDetails || null,
+        usedAmount: null,
+        remainingAmount: null,
+        isFullyConsumed: false,
         consumedBy: null,
         consumedAt: null,
       })
@@ -92,6 +95,10 @@ export async function getUserPotions(userId: string) {
         specialIngredientDetails: potions.specialIngredientDetails,
         consumedBy: potions.consumedBy,
         consumedAt: potions.consumedAt,
+        // Partial consumption fields
+        usedAmount: potions.usedAmount,
+        remainingAmount: potions.remainingAmount,
+        isFullyConsumed: potions.isFullyConsumed,
         // Template data
         templateId: potionTemplates.id,
         templateName: potionTemplates.name,
@@ -127,6 +134,10 @@ export async function getUserPotions(userId: string) {
       specialIngredientDetails: row.specialIngredientDetails,
       consumedBy: row.consumedBy,
       consumedAt: row.consumedAt,
+      // Partial consumption fields
+      usedAmount: row.usedAmount,
+      remainingAmount: row.remainingAmount,
+      isFullyConsumed: row.isFullyConsumed,
       template: {
         id: row.templateId,
         name: row.templateName,
