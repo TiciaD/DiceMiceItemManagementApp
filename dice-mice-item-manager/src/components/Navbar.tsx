@@ -37,6 +37,7 @@ export function Navbar() {
     { href: '/', label: 'Dashboard', icon: '🏠' },
     { href: '/compendium', label: 'Compendium', icon: '📚' },
     { href: '/create', label: 'Create Magic Item', icon: '✨' },
+    { href: '/tools', label: 'Tools', icon: '🧮' },
   ];
 
   return (
