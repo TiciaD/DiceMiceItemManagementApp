@@ -8,7 +8,7 @@ import { HouseService } from '@/lib/house-service';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,6 +17,7 @@ export async function POST(
     }
 
     const { sellPrice, updateHouseGold } = await request.json();
+    const { id: potionId } = await params;
 
     // Validate sell price
     if (typeof sellPrice !== 'number' || sellPrice < 0) {
@@ -27,7 +28,6 @@ export async function POST(
     }
 
     const database = db();
-    const potionId = params.id;
 
     // First, verify that the user owns this potion
     const userPotion = await database

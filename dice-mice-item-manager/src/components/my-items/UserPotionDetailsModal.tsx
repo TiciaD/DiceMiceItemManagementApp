@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PotionWithTemplate, rarityColors, potencyColors, potencyDisplayNames } from '@/types/potions';
-import { formatInGameDate, formatInGameDateTime, getCurrentInGameDate } from '@/lib/dateUtils';
+import { formatInGameDate, getCurrentInGameDate } from '@/lib/dateUtils';
 
 interface UserPotionDetailsModalProps {
   potion: PotionWithTemplate | null;
@@ -131,7 +131,6 @@ export function UserPotionDetailsModal({
         throw new Error(error.error || 'Failed to sell potion');
       }
 
-      const result = await response.json();
       alert(`Potion sold for ${sellPrice} gold pieces!${updateHouseGold ? ` Added to house treasury.` : ''}`);
       onClose();
       // Refresh the page or call a callback to update the list
@@ -431,7 +430,7 @@ export function UserPotionDetailsModal({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              e.g., "1 Dose", "2 die+1", "1 Turn"
+                              e.g., &quot;1 Dose&quot;, &quot;2 die+1&quot;, &quot;1 Turn&quot;
                             </p>
                           </div>
                         )}

@@ -102,7 +102,6 @@ export function UserScrollDetailsModal({
         throw new Error(error.error || 'Failed to sell scroll');
       }
 
-      const result = await response.json();
       alert(`Scroll sold for ${sellPrice} gold pieces!${updateHouseGold ? ` Added to house treasury.` : ''}`);
       onClose();
       // Refresh the page or call a callback to update the list
@@ -408,7 +407,7 @@ export function UserScrollDetailsModal({
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Default value: 50 gp (scrolls don't have a standard cost)
+                    Default value: 50 gp
                   </p>
                 </div>
 

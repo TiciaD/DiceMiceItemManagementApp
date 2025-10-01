@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PotionTemplate } from '@/types/potions';
 
 interface MortalityResult {
@@ -61,7 +61,7 @@ export default function PotionMixingCalculator() {
   }, []);
 
   // Calculate mortality results
-  const calculateResults = () => {
+  const calculateResults = useCallback(() => {
     const consumedPotions = selectedPotions.filter(sp => sp.potion?.id);
 
     if (consumedPotions.length < 2) {
@@ -119,12 +119,12 @@ export default function PotionMixingCalculator() {
       outcomes,
       damageAmounts,
     });
-  };
+  }, [characterLevel, constitutionMod, maxHP, selectedPotions]);
 
   // Update calculations when inputs change
   useEffect(() => {
     calculateResults();
-  }, [characterLevel, constitutionMod, maxHP, selectedPotions]);
+  }, [calculateResults]);
 
   // Filter potion templates based on search term for a specific slot (only discovered potions)
   const getFilteredPotions = (index: number) => {

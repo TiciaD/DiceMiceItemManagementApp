@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SpellTemplate } from '@/types/spells';
 
 interface SpellcastingResult {
@@ -60,7 +60,7 @@ export default function SpellcastingCalculator() {
   );
 
   // Calculate spellcasting results
-  const calculateResults = () => {
+  const calculateResults = useCallback(() => {
     if (!selectedSpell) return;
 
     const spellLevel = selectedSpell.level;
@@ -118,14 +118,14 @@ export default function SpellcastingCalculator() {
       willpowerCosts,
       hpDamage,
     });
-  };
+  }, [selectedSpell, characterLevel, modifierTotal, spellMastery, currentWillpower]);
 
   // Update calculations when inputs change
   useEffect(() => {
     if (selectedSpell) {
       calculateResults();
     }
-  }, [characterLevel, modifierTotal, spellMastery, selectedSpell, currentWillpower, currentHP]);
+  }, [selectedSpell, calculateResults]);
 
   const handleSpellSelect = (spell: SpellTemplate) => {
     setSelectedSpell(spell);

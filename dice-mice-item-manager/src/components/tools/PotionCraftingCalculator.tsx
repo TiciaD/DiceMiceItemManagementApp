@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PotionTemplate } from '@/types/potions';
 
 interface CraftingResult {
@@ -53,7 +53,7 @@ export default function PotionCraftingCalculator() {
   );
 
   // Calculate crafting results
-  const calculateResults = () => {
+  const calculateResults = useCallback(() => {
     if (!discoveryMode && !selectedPotion) return;
     if (discoveryMode && !potionLevel) return;
 
@@ -112,14 +112,14 @@ export default function PotionCraftingCalculator() {
       cost,
       discoveryMode,
     });
-  };
+  }, [discoveryMode, selectedPotion, potionLevel, characterLevel, modifierTotal, potionMastery, extraBonus]);
 
   // Update calculations when inputs change
   useEffect(() => {
     if (selectedPotion || discoveryMode) {
       calculateResults();
     }
-  }, [characterLevel, modifierTotal, potionMastery, extraBonus, discoveryMode, potionLevel, selectedPotion]);
+  }, [selectedPotion, discoveryMode, calculateResults]);
 
   const handlePotionSelect = (potion: PotionTemplate) => {
     setSelectedPotion(potion);
