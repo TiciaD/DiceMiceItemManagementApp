@@ -68,25 +68,49 @@ export default function SpellcastingCalculator() {
     // DC calculation: (Spell Level - Caster Level) * 3 + 13, minimum DC 10
     const dc = Math.max(10, (spellLevel - characterLevel) * 3 + 13);
 
+    // Calculate probabilities (assuming d20 roll)
     // Total bonus for the roll
     const totalBonus = modifierTotal + spellMastery;
 
-    // Calculate probabilities (assuming d20 roll)
-    // Critical fail: natural 1
-    const criticalFailChance = 5; // 1/20 = 5%
-
-    // Critical success: natural 20
-    const criticalSuccessChance = 5; // 1/20 = 5%
-
-    // Regular success: roll + bonus >= DC (excluding natural 20)
-    const minRollForSuccess = Math.max(1, dc - totalBonus);
+    // Calculate what each roll result achieves
+    let criticalSuccessChance = 0;
     let successChance = 0;
-    if (minRollForSuccess <= 19) {
-      successChance = Math.max(0, 19 - minRollForSuccess + 1) * 5; // Each point on d20 is 5%
-    }
+    let failChance = 0;
+    let criticalFailChance = 0;
 
-    // Fail: everything else (excluding natural 1)
-    const failChance = Math.max(0, 90 - criticalSuccessChance - successChance);
+    for (let roll = 1; roll <= 20; roll++) {
+      const totalRoll = roll + totalBonus;
+
+      // Determine the outcome for this roll
+      if (roll === 1) {
+        // Natural 1: critical failure only if it would have failed anyway
+        const wouldFail = (1 + totalBonus) < dc;
+        if (wouldFail) {
+          criticalFailChance += 5; // Natural 1 with failure is critical fail
+        } else {
+          failChance += 5; // Natural 1 that would have succeeded becomes regular fail
+        }
+      } else if (roll === 20) {
+        // Natural 20: critical success only if it would have succeeded anyway
+        const wouldSucceed = (20 + totalBonus) >= dc;
+        if (wouldSucceed) {
+          criticalSuccessChance += 5; // Natural 20 with success is critical success
+        } else {
+          successChance += 5; // Natural 20 that would have failed becomes regular success
+        }
+      } else {
+        // Regular rolls (2-19)
+        if (totalRoll >= dc + 10) {
+          criticalSuccessChance += 5; // Exceed DC by 10+ is critical success
+        } else if (totalRoll >= dc) {
+          successChance += 5; // Meet DC is success
+        } else if (totalRoll <= dc - 10) {
+          criticalFailChance += 5; // Below DC by 10+ is critical fail
+        } else {
+          failChance += 5; // Below DC but not by 10+ is regular fail
+        }
+      }
+    }
 
     // Willpower costs
     const willpowerCosts = {
@@ -133,10 +157,12 @@ export default function SpellcastingCalculator() {
     setShowDropdown(false);
   };
 
-  const getResultColor = (chance: number) => {
-    if (chance >= 50) return 'text-green-600 dark:text-green-400';
-    if (chance >= 25) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+  const getResultColor = (resultType: 'criticalSuccess' | 'success' | 'fail' | 'criticalFail') => {
+    if (resultType === 'criticalSuccess' || resultType === 'success') {
+      return 'text-green-600 dark:text-green-400';
+    } else {
+      return 'text-red-600 dark:text-red-400';
+    }
   };
 
   const getWillpowerColor = (cost: number) => {
@@ -286,25 +312,25 @@ export default function SpellcastingCalculator() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Critical Success:</span>
-                  <span className={getResultColor(result.criticalSuccessChance)}>
+                  <span className={getResultColor('criticalSuccess')}>
                     {result.criticalSuccessChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Success:</span>
-                  <span className={getResultColor(result.successChance)}>
+                  <span className={getResultColor('success')}>
                     {result.successChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Fail:</span>
-                  <span className={getResultColor(100 - result.failChance)}>
+                  <span className={getResultColor('fail')}>
                     {result.failChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Critical Fail:</span>
-                  <span className={getResultColor(100 - result.criticalFailChance)}>
+                  <span className={getResultColor('criticalFail')}>
                     {result.criticalFailChance}%
                   </span>
                 </div>

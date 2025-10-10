@@ -212,3 +212,97 @@ export const userScrolls = sqliteTable(
     }),
   })
 );
+
+// Skills - Core skills available in the game
+export const skills = sqliteTable('skill', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  associatedStat: text('associated_stat').notNull(), // e.g. STR, CON, INT, DEX, WIS, CON
+});
+
+// Skill Abilities - Abilities granted by skills at different levels
+export const skillAbilities = sqliteTable('skill_ability', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  level: integer('level').notNull(),
+  skillId: text('skill_id')
+    .notNull()
+    .references(() => skills.id, { onDelete: 'cascade' }),
+});
+
+// Classes - Character classes available in the game
+export const classes = sqliteTable('class', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  prerequisiteStat1: text('prerequisite_stat_1').notNull(), // e.g. STR, CON, INT, DEX, WIS, CON
+  prerequisiteStat2: text('prerequisite_stat_2'), // Optional second prerequisite stat
+  isAvailable: integer('is_available', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  willpowerProgression: text('willpower_progression').notNull(), // e.g. even_levels, all_levels, none
+  hitDie: text('hit_die').notNull(), // e.g. 1d6
+});
+
+// Class Abilities - Abilities granted by classes at different levels
+export const classAbilities = sqliteTable('class_ability', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  level: integer('level').notNull(),
+  classId: text('class_id')
+    .notNull()
+    .references(() => classes.id, { onDelete: 'cascade' }),
+});
+
+// Class-Skill junction table - Which skills are available to which classes
+export const classSkills = sqliteTable(
+  'class_skill',
+  {
+    classId: text('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    skillId: text('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    // Compound primary key to ensure a class-skill pair is only defined once
+    pk: primaryKey({
+      columns: [table.classId, table.skillId],
+    }),
+  })
+);
+
+// Class Base Attributes - Base stats for classes at different levels
+export const classBaseAttributes = sqliteTable('class_base_attribute', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  classId: text('class_id')
+    .notNull()
+    .references(() => classes.id, { onDelete: 'cascade' }),
+  level: integer('level').notNull(),
+  attack: integer('attack').notNull(),
+  spellAttack: integer('spell_attack').notNull(),
+  ac: integer('ac').notNull(),
+  fortitude: integer('fortitude').notNull(),
+  reflex: integer('reflex').notNull(),
+  will: integer('will').notNull(),
+  damageBonus: text('damage_bonus').notNull(),
+  leadership: integer('leadership').notNull(),
+  skillRanks: integer('skill_ranks').notNull(),
+  slayer: text('slayer'), // Optional
+  rage: text('rage'), // Optional
+  brutalAdvantage: integer('brutal_advantage'), // Optional
+});

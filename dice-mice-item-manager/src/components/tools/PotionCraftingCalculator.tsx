@@ -76,21 +76,35 @@ export default function PotionCraftingCalculator() {
     // For each possible d20 roll (1-20)
     for (let roll = 1; roll <= 20; roll++) {
       const total = roll + totalBonus;
-      const isNat1 = roll === 1;
-      const isNat20 = roll === 20;
 
-      if (total >= dc + 10 || (isNat20 && total >= dc)) {
-        // Critical Success: exceeds DC by 10+ OR nat 20 with success
-        criticalSuccessChance += 5; // 1/20 = 5%
-      } else if (total >= dc) {
-        // Regular Success
-        successChance += 5;
-      } else if (total <= dc - 10 || (isNat1 && total < dc)) {
-        // Critical Fail: below DC by 10+ OR nat 1 with failure
-        criticalFailChance += 5;
+      // Determine the outcome for this roll
+      if (roll === 1) {
+        // Natural 1: critical failure only if it would have failed anyway
+        const wouldFail = (1 + totalBonus) < dc;
+        if (wouldFail) {
+          criticalFailChance += 5; // Natural 1 with failure is critical fail
+        } else {
+          failChance += 5; // Natural 1 that would have succeeded becomes regular fail
+        }
+      } else if (roll === 20) {
+        // Natural 20: critical success only if it would have succeeded anyway
+        const wouldSucceed = (20 + totalBonus) >= dc;
+        if (wouldSucceed) {
+          criticalSuccessChance += 5; // Natural 20 with success is critical success
+        } else {
+          successChance += 5; // Natural 20 that would have failed becomes regular success
+        }
       } else {
-        // Regular Fail
-        failChance += 5;
+        // Regular rolls (2-19)
+        if (total >= dc + 10) {
+          criticalSuccessChance += 5; // Exceed DC by 10+ is critical success
+        } else if (total >= dc) {
+          successChance += 5; // Meet DC is success
+        } else if (total <= dc - 10) {
+          criticalFailChance += 5; // Below DC by 10+ is critical fail
+        } else {
+          failChance += 5; // Below DC but not by 10+ is regular fail
+        }
       }
     }
 
@@ -127,10 +141,12 @@ export default function PotionCraftingCalculator() {
     setShowDropdown(false);
   };
 
-  const getResultColor = (chance: number) => {
-    if (chance >= 50) return 'text-green-600 dark:text-green-400';
-    if (chance >= 25) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+  const getResultColor = (resultType: 'criticalSuccess' | 'success' | 'fail' | 'criticalFail' | 'overall') => {
+    if (resultType === 'criticalSuccess' || resultType === 'success' || resultType === 'overall') {
+      return 'text-green-600 dark:text-green-400';
+    } else {
+      return 'text-red-600 dark:text-red-400';
+    }
   };
 
   return (
@@ -338,31 +354,31 @@ export default function PotionCraftingCalculator() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Critical Success:</span>
-                  <span className={getResultColor(result.criticalSuccessChance)}>
+                  <span className={getResultColor('criticalSuccess')}>
                     {result.criticalSuccessChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Success:</span>
-                  <span className={getResultColor(result.successChance)}>
+                  <span className={getResultColor('success')}>
                     {result.successChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Fail:</span>
-                  <span className={getResultColor(100 - result.failChance)}>
+                  <span className={getResultColor('fail')}>
                     {result.failChance}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-300">Critical Fail:</span>
-                  <span className={getResultColor(100 - result.criticalFailChance)}>
+                  <span className={getResultColor('criticalFail')}>
                     {result.criticalFailChance}%
                   </span>
                 </div>
                 <div className="flex justify-between border-t pt-2">
-                  <span className="font-medium text-gray-900 dark:text-white">Overall Success:</span>
-                  <span className={`font-medium ${getResultColor(result.criticalSuccessChance + result.successChance)}`}>
+                  <span className="font-medium text-gray-900 dark:text-white">Overall Success Probability:</span>
+                  <span className={`font-medium ${getResultColor('overall')}`}>
                     {result.criticalSuccessChance + result.successChance}%
                   </span>
                 </div>

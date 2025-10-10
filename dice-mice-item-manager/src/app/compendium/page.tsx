@@ -3,15 +3,21 @@
 import { useState } from 'react';
 import { PotionsSection } from '@/components/compendium/PotionsSection';
 import { SpellsSection } from '@/components/compendium/SpellsSection';
+import { ClassesSection } from '@/components/compendium/ClassesSection';
+import { SkillsSection } from '@/components/compendium/SkillsSection';
 import { PotionTemplateWithDetails } from '@/types/potions';
 import { SpellTemplateWithDetails } from '@/types/spells';
+import { ClassWithDetails } from '@/types/classes';
+import { SkillWithDetails } from '@/types/skills';
 
-type CompendiumSection = 'potions' | 'spells' | 'weapons' | 'shields';
+type CompendiumSection = 'potions' | 'spells' | 'classes' | 'skills' | 'weapons' | 'shields';
 
 export default function Compendium() {
   const [activeSection, setActiveSection] = useState<CompendiumSection | null>(null);
   const [potionTemplates, setPotionTemplates] = useState<PotionTemplateWithDetails[]>([]);
   const [spellTemplates, setSpellTemplates] = useState<SpellTemplateWithDetails[]>([]);
+  const [classes, setClasses] = useState<ClassWithDetails[]>([]);
+  const [skills, setSkills] = useState<SkillWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
 
   const sections = [
@@ -27,6 +33,20 @@ export default function Compendium() {
       title: '✨ Spells',
       description: 'Magical incantations and enchantments',
       icon: '✨',
+      available: true
+    },
+    {
+      id: 'classes' as const,
+      title: '🎭 Classes',
+      description: 'Character classes and their abilities',
+      icon: '🎭',
+      available: true
+    },
+    {
+      id: 'skills' as const,
+      title: '🎯 Skills',
+      description: 'Character skills and proficiencies',
+      icon: '🎯',
       available: true
     },
     {
@@ -80,6 +100,36 @@ export default function Compendium() {
     }
   };
 
+  const fetchClasses = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/classes');
+      if (response.ok) {
+        const classesData = await response.json();
+        setClasses(classesData);
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSkills = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/skills');
+      if (response.ok) {
+        const skillsData = await response.json();
+        setSkills(skillsData);
+      }
+    } catch (error) {
+      console.error('Error fetching skills:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSectionClick = async (sectionId: CompendiumSection) => {
     if (!sections.find(s => s.id === sectionId)?.available) {
       return; // Don't allow clicking on unavailable sections
@@ -97,6 +147,10 @@ export default function Compendium() {
       await fetchPotionTemplates();
     } else if (sectionId === 'spells' && spellTemplates.length === 0) {
       await fetchSpellTemplates();
+    } else if (sectionId === 'classes' && classes.length === 0) {
+      await fetchClasses();
+    } else if (sectionId === 'skills' && skills.length === 0) {
+      await fetchSkills();
     }
   };
 
@@ -124,6 +178,26 @@ export default function Compendium() {
           <SpellsSection templates={spellTemplates} />
         );
 
+      case 'classes':
+        return loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading classes...</span>
+          </div>
+        ) : (
+          <ClassesSection classes={classes} />
+        );
+
+      case 'skills':
+        return loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading skills...</span>
+          </div>
+        ) : (
+          <SkillsSection skills={skills} />
+        );
+
       case 'weapons':
         return (
           <div className="text-center py-12">
@@ -149,10 +223,10 @@ export default function Compendium() {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-            📚 Item Compendium
+            📚 Compendium
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Browse through a comprehensive collection of D&D items and equipment.
+            Browse through a comprehensive collection of Dice Mice items and equipment.
           </p>
         </div>
 

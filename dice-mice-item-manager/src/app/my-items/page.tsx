@@ -32,13 +32,6 @@ export default function MyItems() {
       available: true
     },
     {
-      id: 'spells' as const,
-      title: '✨ Spells',
-      description: 'Your spell repertoire',
-      icon: '✨',
-      available: false
-    },
-    {
       id: 'weapons' as const,
       title: '⚔️ Weapons',
       description: 'Your armaments',
