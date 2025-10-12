@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { House } from '@/types/houses';
+import { useState, useEffect } from 'react';
+import { HouseWithCounty } from '@/types/houses';
+import { County } from '@/types/counties';
 
 interface CreateHouseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (house: House) => void;
+  onSuccess: (house: HouseWithCounty) => void;
 }
 
 export default function CreateHouseModal({ isOpen, onClose, onSuccess }: CreateHouseModalProps) {
@@ -14,9 +15,38 @@ export default function CreateHouseModal({ isOpen, onClose, onSuccess }: CreateH
     name: '',
     motto: '',
     bio: '',
+    countyId: '',
   });
+  const [counties, setCounties] = useState<County[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCounties, setIsLoadingCounties] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch counties when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchCounties();
+    }
+  }, [isOpen]);
+
+  const fetchCounties = async () => {
+    setIsLoadingCounties(true);
+    try {
+      const response = await fetch('/api/counties');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch counties');
+      }
+
+      setCounties(data.counties);
+    } catch (error) {
+      console.error('Error fetching counties:', error);
+      setError('Failed to load counties');
+    } finally {
+      setIsLoadingCounties(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +69,7 @@ export default function CreateHouseModal({ isOpen, onClose, onSuccess }: CreateH
       }
 
       onSuccess(data.house);
-      setFormData({ name: '', motto: '', bio: '' });
+      setFormData({ name: '', motto: '', bio: '', countyId: '' });
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create house');
@@ -73,6 +103,55 @@ export default function CreateHouseModal({ isOpen, onClose, onSuccess }: CreateH
                 required
                 disabled={isLoading}
               />
+            </div>
+
+            <div>
+              <label htmlFor="originCounty" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Origin County *
+              </label>
+              {isLoadingCounties ? (
+                <div className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                  Loading counties...
+                </div>
+              ) : (
+                <select
+                  id="originCounty"
+                  value={formData.countyId}
+                  onChange={(e) => setFormData({ ...formData, countyId: e.target.value })}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white text-base"
+                  required
+                  disabled={isLoading}
+                >
+                  <option value="">Select your house&apos;s origin county</option>
+                  {counties.map((county) => (
+                    <option key={county.id} value={county.id}>
+                      {county.name} (Associated Stat: {county.associatedStat})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {formData.countyId && (
+                <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>County Benefits:</strong>
+                    {(() => {
+                      const selectedCounty = counties.find(c => c.id === formData.countyId);
+                      if (!selectedCounty) return null;
+                      return (
+                        <div className="mt-1">
+                          <div>• Characters roll 3d4 keep 3 for {selectedCounty.associatedStat}</div>
+                          {selectedCounty.associatedSkills && (
+                            <div>• Associated skills: {selectedCounty.associatedSkills}</div>
+                          )}
+                          <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 italic">
+                            {selectedCounty.description}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -122,7 +201,7 @@ export default function CreateHouseModal({ isOpen, onClose, onSuccess }: CreateH
               </button>
               <button
                 type="submit"
-                disabled={isLoading || !formData.name.trim()}
+                disabled={isLoading || !formData.name.trim() || !formData.countyId}
                 className="cursor-pointer flex-1 px-4 py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Creating...' : 'Create House'}

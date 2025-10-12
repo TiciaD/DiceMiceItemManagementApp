@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { House } from '@/types/houses';
+import { HouseWithCounty } from '@/types/houses';
 import CreateHouseModal from './CreateHouseModal';
 import HouseCard from './HouseCard';
 
 export default function HouseSection() {
-  const [house, setHouse] = useState<House | null | undefined>(undefined); // undefined = loading, null = no house, House = has house
+  const [house, setHouse] = useState<HouseWithCounty | null | undefined>(undefined); // undefined = loading, null = no house, HouseWithCounty = has house
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,11 +31,11 @@ export default function HouseSection() {
     }
   };
 
-  const handleHouseCreated = (newHouse: House) => {
+  const handleHouseCreated = (newHouse: HouseWithCounty) => {
     setHouse(newHouse);
   };
 
-  const handleHouseUpdated = (updatedHouse: House) => {
+  const handleHouseUpdated = (updatedHouse: HouseWithCounty) => {
     setHouse(updatedHouse);
   };
 

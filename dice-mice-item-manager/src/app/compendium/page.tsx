@@ -5,12 +5,14 @@ import { PotionsSection } from '@/components/compendium/PotionsSection';
 import { SpellsSection } from '@/components/compendium/SpellsSection';
 import { ClassesSection } from '@/components/compendium/ClassesSection';
 import { SkillsSection } from '@/components/compendium/SkillsSection';
+import { CountiesSection } from '@/components/compendium/CountiesSection';
 import { PotionTemplateWithDetails } from '@/types/potions';
 import { SpellTemplateWithDetails } from '@/types/spells';
 import { ClassWithDetails } from '@/types/classes';
 import { SkillWithDetails } from '@/types/skills';
+import { County } from '@/types/counties';
 
-type CompendiumSection = 'potions' | 'spells' | 'classes' | 'skills' | 'weapons' | 'shields';
+type CompendiumSection = 'potions' | 'spells' | 'classes' | 'skills' | 'counties' | 'weapons' | 'shields';
 
 export default function Compendium() {
   const [activeSection, setActiveSection] = useState<CompendiumSection | null>(null);
@@ -18,6 +20,7 @@ export default function Compendium() {
   const [spellTemplates, setSpellTemplates] = useState<SpellTemplateWithDetails[]>([]);
   const [classes, setClasses] = useState<ClassWithDetails[]>([]);
   const [skills, setSkills] = useState<SkillWithDetails[]>([]);
+  const [counties, setCounties] = useState<County[]>([]);
   const [loading, setLoading] = useState(false);
 
   const sections = [
@@ -47,6 +50,13 @@ export default function Compendium() {
       title: '🎯 Skills',
       description: 'Character skills and proficiencies',
       icon: '🎯',
+      available: true
+    },
+    {
+      id: 'counties' as const,
+      title: '🏞️ Counties',
+      description: 'Various regions of Squeakshire',
+      icon: '🏞️',
       available: true
     },
     {
@@ -130,6 +140,21 @@ export default function Compendium() {
     }
   };
 
+  const fetchCounties = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/counties');
+      if (response.ok) {
+        const data = await response.json();
+        setCounties(data.counties);
+      }
+    } catch (error) {
+      console.error('Error fetching counties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSectionClick = async (sectionId: CompendiumSection) => {
     if (!sections.find(s => s.id === sectionId)?.available) {
       return; // Don't allow clicking on unavailable sections
@@ -151,6 +176,8 @@ export default function Compendium() {
       await fetchClasses();
     } else if (sectionId === 'skills' && skills.length === 0) {
       await fetchSkills();
+    } else if (sectionId === 'counties' && counties.length === 0) {
+      await fetchCounties();
     }
   };
 
@@ -198,6 +225,16 @@ export default function Compendium() {
           <SkillsSection skills={skills} />
         );
 
+      case 'counties':
+        return loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading counties...</span>
+          </div>
+        ) : (
+          <CountiesSection counties={counties} />
+        );
+
       case 'weapons':
         return (
           <div className="text-center py-12">
@@ -231,7 +268,7 @@ export default function Compendium() {
         </div>
 
         {/* Section Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {sections.map((section) => (
             <button
               key={section.id}

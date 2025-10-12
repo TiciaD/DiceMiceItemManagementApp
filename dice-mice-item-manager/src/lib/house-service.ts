@@ -1,7 +1,7 @@
 import { db } from '@/db/client';
-import { houses } from '@/db/schema';
+import { houses, counties } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { House, NewHouse } from '@/types/houses';
+import { House, NewHouse, HouseWithCounty } from '@/types/houses';
 
 export class HouseService {
   // Get house by user ID
@@ -10,6 +10,36 @@ export class HouseService {
     const result = await database
       .select()
       .from(houses)
+      .where(eq(houses.userId, userId))
+      .limit(1);
+
+    return result[0] || null;
+  }
+
+  // Get house with county information by user ID
+  static async getHouseWithCountyByUserId(
+    userId: string
+  ): Promise<HouseWithCounty | null> {
+    const database = db();
+    const result = await database
+      .select({
+        id: houses.id,
+        name: houses.name,
+        userId: houses.userId,
+        countyId: houses.countyId,
+        motto: houses.motto,
+        bio: houses.bio,
+        gold: houses.gold,
+        county: {
+          id: counties.id,
+          name: counties.name,
+          description: counties.description,
+          associatedStat: counties.associatedStat,
+          associatedSkills: counties.associatedSkills,
+        },
+      })
+      .from(houses)
+      .innerJoin(counties, eq(houses.countyId, counties.id))
       .where(eq(houses.userId, userId))
       .limit(1);
 
@@ -25,6 +55,46 @@ export class HouseService {
       .returning();
 
     return newHouse;
+  }
+
+  // Create a new house and return it with county information
+  static async createHouseWithCounty(
+    houseData: NewHouse
+  ): Promise<HouseWithCounty | null> {
+    const database = db();
+
+    // Create the house
+    const [newHouse] = await database
+      .insert(houses)
+      .values(houseData)
+      .returning();
+
+    if (!newHouse) return null;
+
+    // Get the house with county information
+    const result = await database
+      .select({
+        id: houses.id,
+        name: houses.name,
+        userId: houses.userId,
+        countyId: houses.countyId,
+        motto: houses.motto,
+        bio: houses.bio,
+        gold: houses.gold,
+        county: {
+          id: counties.id,
+          name: counties.name,
+          description: counties.description,
+          associatedStat: counties.associatedStat,
+          associatedSkills: counties.associatedSkills,
+        },
+      })
+      .from(houses)
+      .innerJoin(counties, eq(houses.countyId, counties.id))
+      .where(eq(houses.id, newHouse.id))
+      .limit(1);
+
+    return result[0] || null;
   }
 
   // Update house

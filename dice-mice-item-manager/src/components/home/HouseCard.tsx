@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { House } from '@/types/houses';
+import { HouseWithCounty } from '@/types/houses';
 import GoldManager from './GoldManager';
 
 interface HouseCardProps {
-  house: House;
-  onUpdate: (updatedHouse: House) => void;
+  house: HouseWithCounty;
+  onUpdate: (updatedHouse: HouseWithCounty) => void;
 }
 
 export default function HouseCard({ house, onUpdate }: HouseCardProps) {
@@ -119,6 +119,31 @@ export default function HouseCard({ house, onUpdate }: HouseCardProps) {
 
       <div className="p-4 sm:p-6">
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Origin County
+            </label>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">🏞️</span>
+                <div>
+                  <p className="text-gray-900 dark:text-gray-100 font-medium">
+                    {house.county.name}
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    Associated Stat: {house.county.associatedStat}
+                  </p>
+                  {house.county.associatedSkills && (
+
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Associated skills: {house.county.associatedSkills}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               House Words

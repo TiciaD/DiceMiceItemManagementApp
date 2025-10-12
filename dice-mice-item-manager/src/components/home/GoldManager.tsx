@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { House } from '@/types/houses';
+import { HouseWithCounty } from '@/types/houses';
 
 interface GoldManagerProps {
-  house: House;
-  onUpdate: (updatedHouse: House) => void;
+  house: HouseWithCounty;
+  onUpdate: (updatedHouse: HouseWithCounty) => void;
 }
 
 export default function GoldManager({ house, onUpdate }: GoldManagerProps) {

@@ -1,8 +1,7 @@
-import { houses } from '@/db/schema';
-import { County } from './counties';
+import { counties } from '@/db/schema';
 
-export type House = typeof houses.$inferSelect;
-export type NewHouse = typeof houses.$inferInsert;
+export type County = typeof counties.$inferSelect;
+export type NewCounty = typeof counties.$inferInsert;
 
 // Extended house type that includes county information
 export interface HouseWithCounty {

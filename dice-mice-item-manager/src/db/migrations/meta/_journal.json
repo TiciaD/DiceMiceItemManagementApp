@@ -71,6 +71,20 @@
       "when": 1760067438603,
       "tag": "0009_organic_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1760287771486,
+      "tag": "0010_equal_doctor_doom",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1760288527490,
+      "tag": "0011_quick_wrecking_crew",
+      "breakpoints": true
     }
   ]
 }

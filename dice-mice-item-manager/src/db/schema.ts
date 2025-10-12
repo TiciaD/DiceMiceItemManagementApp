@@ -26,6 +26,10 @@ export const houses = sqliteTable('house', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  countyId: text('county_id')
+    .notNull()
+    .references(() => counties.id, { onDelete: 'restrict' })
+    .default('t1i7dfmcoaycjux7fz7njd1n'),
   motto: text('motto'),
   bio: text('bio'),
   gold: integer('gold').notNull().default(0),
@@ -212,6 +216,17 @@ export const userScrolls = sqliteTable(
     }),
   })
 );
+
+// Counties - Geographic regions that houses and characters originate from
+export const counties = sqliteTable('county', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  associatedStat: text('associated_stat').notNull(), // e.g. STR, CON, INT, DEX, WIS, CON
+  associatedSkills: text('associated_skills'), // Comma-separated skill text i.e. "Endurance, Any Defensive Saving Throw"
+});
 
 // Skills - Core skills available in the game
 export const skills = sqliteTable('skill', {

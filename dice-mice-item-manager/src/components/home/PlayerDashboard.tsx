@@ -12,9 +12,6 @@ export default function PlayerDashboard({ session }: PlayerDashboardProps) {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Welcome back, {session.user?.name}! 🎲
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Your personal Dice Mice item dashboard
-        </p>
       </div>
 
       {/* House Section */}

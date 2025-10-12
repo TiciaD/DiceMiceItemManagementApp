@@ -10,7 +10,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const house = await HouseService.getHouseByUserId(session.user.id);
+    const house = await HouseService.getHouseWithCountyByUserId(
+      session.user.id
+    );
 
     if (!house) {
       return NextResponse.json({ house: null }, { status: 200 });
@@ -34,11 +36,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, motto, bio } = body;
+    const { name, motto, bio, countyId } = body;
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json(
         { error: 'House name is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!countyId || typeof countyId !== 'string') {
+      return NextResponse.json(
+        { error: 'Origin county is required' },
         { status: 400 }
       );
     }
@@ -52,15 +61,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newHouse = await HouseService.createHouse({
+    // Create the house with county information
+    const houseWithCounty = await HouseService.createHouseWithCounty({
       name: name.trim(),
       userId: session.user.id,
+      countyId: countyId,
       motto: motto?.trim() || null,
       bio: bio?.trim() || null,
       gold: 0,
     });
 
-    return NextResponse.json({ house: newHouse }, { status: 201 });
+    if (!houseWithCounty) {
+      return NextResponse.json(
+        { error: 'Failed to create house with county information' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ house: houseWithCounty }, { status: 201 });
   } catch (error) {
     console.error('Error creating house:', error);
     return NextResponse.json(
@@ -109,7 +127,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ house: updatedHouse }, { status: 200 });
+    // Get the updated house with county information
+    const houseWithCounty = await HouseService.getHouseWithCountyByUserId(
+      session.user.id
+    );
+
+    return NextResponse.json({ house: houseWithCounty }, { status: 200 });
   } catch (error) {
     console.error('Error updating house:', error);
     return NextResponse.json(
