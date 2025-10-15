@@ -117,6 +117,14 @@ export function Navbar() {
                       My Items
                     </Link>
                     <Link
+                      href="/my-characters"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={closeUserMenu}
+                    >
+                      <span className="mr-2">👥</span>
+                      My Characters
+                    </Link>
+                    <Link
                       href="/admin"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={closeUserMenu}
@@ -217,6 +225,14 @@ export function Navbar() {
                 >
                   <span>🎒</span>
                   <span>My Items</span>
+                </Link>
+                <Link
+                  href="/my-characters"
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={closeMobileMenu}
+                >
+                  <span>👥</span>
+                  <span>My Characters</span>
                 </Link>
                 <Link
                   href="/admin"

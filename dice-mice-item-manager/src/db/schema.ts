@@ -5,6 +5,7 @@ import {
   real,
   primaryKey,
 } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 export const users = sqliteTable('user', {
@@ -321,3 +322,100 @@ export const classBaseAttributes = sqliteTable('class_base_attribute', {
   rage: text('rage'), // Optional
   brutalAdvantage: integer('brutal_advantage'), // Optional
 });
+
+// Characters - Player characters in the game
+export const characters = sqliteTable('character', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  houseId: text('house_id')
+    .notNull()
+    .references(() => houses.id, { onDelete: 'cascade' }),
+  countyId: text('county_id')
+    .notNull()
+    .references(() => counties.id, { onDelete: 'cascade' }),
+  classId: text('class_id')
+    .notNull()
+    .references(() => classes.id, { onDelete: 'cascade' }),
+
+  // Current aggregate values (for fast access)
+  currentLevel: integer('current_level').notNull().default(1),
+  currentHP: integer('current_HP').notNull().default(0),
+  maxHP: integer('max_HP').notNull().default(0),
+  currentStatus: text('current_status').notNull().default('ALIVE'), // e.g. ALIVE, DEAD, INJURED
+
+  // Current base stats (for fast access)
+  currentSTR: integer('current_STR').notNull().default(0),
+  currentCON: integer('current_CON').notNull().default(0),
+  currentDEX: integer('current_DEX').notNull().default(0),
+  currentINT: integer('current_INT').notNull().default(0),
+  currentWIS: integer('current_WIS').notNull().default(0),
+  currentCHA: integer('current_CHA').notNull().default(0),
+
+  // Historical progression data (JSON for efficiency)
+  hpRollsByLevel: text('hp_rolls_by_level'), // JSON: {"1": 6, "2": 4, "3": 8, ...}
+  statsByLevel: text('stats_by_level'), // JSON: {"1": {"STR": 14, "CON": 12, ...}, "2": {...}}
+
+  // Character details
+  trait: text('trait'),
+  notes: text('notes'),
+  experience: integer('experience').notNull().default(0),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+// Character Potion Mastery - Tracks mastery levels for specific potions per character
+export const characterPotionMastery = sqliteTable(
+  'character_potion_mastery',
+  {
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    potionTemplateId: text('potion_template_id')
+      .notNull()
+      .references(() => potionTemplates.id, { onDelete: 'cascade' }),
+    masteryLevel: integer('mastery_level').notNull().default(0), // 0-10 max
+    lastUpdated: integer('last_updated', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    // Compound primary key to ensure one mastery record per character-potion pair
+    pk: primaryKey({
+      columns: [table.characterId, table.potionTemplateId],
+    }),
+  })
+);
+
+// Character Spell Mastery - Tracks mastery levels for specific spells per character
+export const characterSpellMastery = sqliteTable(
+  'character_spell_mastery',
+  {
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    spellTemplateId: text('spell_template_id')
+      .notNull()
+      .references(() => spellTemplates.id, { onDelete: 'cascade' }),
+    masteryLevel: integer('mastery_level').notNull().default(0), // 0-10 max
+    lastUpdated: integer('last_updated', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    // Compound primary key to ensure one mastery record per character-spell pair
+    pk: primaryKey({
+      columns: [table.characterId, table.spellTemplateId],
+    }),
+  })
+);

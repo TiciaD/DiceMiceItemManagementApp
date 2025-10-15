@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Local debug notes
 PRODUCTION_DEBUG.md
+TESTING.md
+CHARACTER_TESTING_SUMMARY.md
