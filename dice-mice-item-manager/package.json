@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "build:turbo": "next build --turbopack",
     "build:production": "cross-env NODE_ENV=production next build",
@@ -16,8 +17,6 @@
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test && npm run test:e2e",
     "test:ci": "npm run lint && npm run test:coverage -- --watchAll=false && npm run build",
-    "test:ci:local": "bash scripts/test-ci-locally.sh",
-    "test:ci:local:windows": "scripts/test-ci-locally.bat",
     "db:generate": "drizzle-kit generate",
     "db:generate:production": "cross-env NODE_ENV=production drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

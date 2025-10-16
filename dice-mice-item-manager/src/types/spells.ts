@@ -30,15 +30,13 @@ export const schoolColors = {
 } as const;
 
 // Material types
-export type MaterialType = 'paper' | 'vellum' | 'parchment' | 'skin' | 'cloth';
+export type MaterialType = 'vellum' | 'parchment' | 'stone';
 
 // Material display names
 export const materialDisplayNames = {
-  paper: 'Paper',
-  vellum: 'Vellum',
-  parchment: 'Parchment',
-  skin: 'Skin',
-  cloth: 'Cloth',
+  parchment: 'Parchment (Base)',
+  vellum: 'Living Vellum',
+  stone: 'Elemental Stone',
 } as const;
 
 // Material colors for UI

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PotionTemplateWithDetails, CreatePotionFormData, PotencyType, potencyDisplayNames, potencyColors } from '@/types/potions';
+import { PotionTemplateWithDetails, CreatePotionFormData, CreatePotionFormState, PotencyType, potencyDisplayNames, potencyColors, Character } from '@/types/potions';
+import { CharacterAutocomplete } from '@/components/ui/CharacterAutocomplete';
 import { createId } from '@paralleldrive/cuid2';
 
 interface AddPotionModalProps {
@@ -19,18 +20,28 @@ export function AddPotionModal({
   selectedTemplate,
   availableTemplates
 }: AddPotionModalProps) {
-  const [formData, setFormData] = useState<CreatePotionFormData>({
+  const [formData, setFormData] = useState<CreatePotionFormState>({
     potionTemplateId: selectedTemplate?.id || '',
     customId: '',
     hasCustomId: false,
-    craftedBy: '',
+    craftedBy: null, // Changed from empty string to null
     craftedAt: new Date(),
     craftedPotency: 'success',
     weight: 0.33, // Default weight of all potions
-    specialIngredientDetails: '' // Default empty for special ingredient details
+    specialIngredientDetails: '', // Default empty for special ingredient details
+
+    // Grunt work functionality
+    isGruntWork: false,
+    supervisorName: '',
+    supervisorLevel: 1,
+    gruntWorkerName: '',
+    supervisor: null,
+    gruntWorker: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof CreatePotionFormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CreatePotionFormState, string>>>({});
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [charactersLoading, setCharactersLoading] = useState(true);
 
   // Reset form when modal opens/closes or selectedTemplate changes
   useEffect(() => {
@@ -39,20 +50,50 @@ export function AddPotionModal({
         potionTemplateId: selectedTemplate?.id || '',
         customId: '',
         hasCustomId: false,
-        craftedBy: '',
+        craftedBy: null, // Changed from empty string to null
         craftedAt: new Date(),
         craftedPotency: 'success',
         weight: 0.33, // Default weight of all potions
-        specialIngredientDetails: '' // Default empty for special ingredient details
+        specialIngredientDetails: '', // Default empty for special ingredient details
+
+        // Grunt work functionality
+        isGruntWork: false,
+        supervisorName: '',
+        supervisorLevel: 1,
+        gruntWorkerName: '',
+        supervisor: null,
+        gruntWorker: null,
       });
       setErrors({});
     }
   }, [isOpen, selectedTemplate]);
 
+  // Fetch characters for autocomplete
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      setCharactersLoading(true);
+      try {
+        const response = await fetch('/api/characters');
+        const data = await response.json();
+        if (data.success) {
+          setCharacters(data.characters);
+        }
+      } catch (error) {
+        console.error('Error fetching characters:', error);
+      } finally {
+        setCharactersLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchCharacters();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof CreatePotionFormData, string>> = {};
+    const newErrors: Partial<Record<keyof CreatePotionFormState, string>> = {};
     const selectedTemplateData = availableTemplates.find(t => t.id === formData.potionTemplateId);
 
     if (!formData.potionTemplateId) {
@@ -61,9 +102,21 @@ export function AddPotionModal({
     if (formData.hasCustomId && !formData.customId.trim()) {
       newErrors.customId = 'Custom ID is required when enabled';
     }
-    if (!formData.craftedBy.trim()) {
-      newErrors.craftedBy = 'Crafter name is required';
+
+    // Validation for crafter/grunt work
+    if (!formData.isGruntWork) {
+      if (!formData.craftedBy) {
+        newErrors.craftedBy = 'Please select who crafted this potion';
+      }
+    } else {
+      if (!formData.supervisor) {
+        newErrors.supervisor = 'Please select a supervising crafter';
+      }
+      if (!formData.gruntWorker) {
+        newErrors.gruntWorker = 'Please select a grunt worker';
+      }
     }
+
     // Require special ingredient details if the template has a special ingredient
     if (selectedTemplateData?.specialIngredient && !formData.specialIngredientDetails?.trim()) {
       newErrors.specialIngredientDetails = 'Special ingredient details are required for this potion';
@@ -80,9 +133,28 @@ export function AddPotionModal({
 
     setIsSubmitting(true);
     try {
-      const submitData = {
-        ...formData,
-        customId: formData.hasCustomId ? formData.customId : createId()
+      // Determine who actually crafted it and character IDs
+      const actualCrafter = formData.isGruntWork ? formData.gruntWorker : formData.craftedBy;
+      const craftedByString = actualCrafter?.type === 'character'
+        ? actualCrafter.character!.name
+        : actualCrafter?.display || '';
+
+      const submitData: CreatePotionFormData = {
+        potionTemplateId: formData.potionTemplateId,
+        customId: formData.hasCustomId ? formData.customId : createId(),
+        hasCustomId: formData.hasCustomId,
+        craftedBy: craftedByString, // Display name for backend
+        craftedAt: formData.craftedAt,
+        craftedPotency: formData.craftedPotency,
+        weight: formData.weight,
+        specialIngredientDetails: formData.specialIngredientDetails,
+
+        // Character tracking for mastery allocation
+        crafterCharacterId: actualCrafter?.type === 'character' ? actualCrafter.character!.id : null,
+        isGruntWork: formData.isGruntWork,
+        supervisorCharacterId: formData.isGruntWork && formData.supervisor?.type === 'character'
+          ? formData.supervisor.character!.id
+          : null,
       };
       await onSubmit(submitData);
       onClose();
@@ -199,23 +271,87 @@ export function AddPotionModal({
               )}
             </div>
 
-            {/* Crafter */}
+            {/* Grunt Work Toggle */}
             <div>
-              <label htmlFor="craftedBy" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Crafted By *
-              </label>
-              <input
-                id="craftedBy"
-                type="text"
-                placeholder="Enter crafter name or character"
-                value={formData.craftedBy}
-                onChange={(e) => setFormData({ ...formData, craftedBy: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-              {errors.craftedBy && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.craftedBy}</p>
-              )}
+              <div className="flex items-center mb-2">
+                <input
+                  id="isGruntWork"
+                  type="checkbox"
+                  checked={formData.isGruntWork}
+                  onChange={(e) => setFormData({ ...formData, isGruntWork: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isGruntWork" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  This is grunt work under another crafter
+                </label>
+              </div>
             </div>
+
+            {/* Crafter/Supervisor Selection */}
+            {!formData.isGruntWork ? (
+              /* Direct crafting */
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Crafted By *
+                </label>
+                {charactersLoading ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                    Loading characters...
+                  </div>
+                ) : (
+                  <CharacterAutocomplete
+                    characters={characters}
+                    value={formData.craftedBy}
+                    onChange={(option) => setFormData({ ...formData, craftedBy: option })}
+                    error={errors.craftedBy}
+                    placeholder="Select or search for a crafter..."
+                  />
+                )}
+              </div>
+            ) : (
+              /* Grunt work - Supervisor and Grunt Worker */
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Supervising Crafter *
+                  </label>
+                  {charactersLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      Loading characters...
+                    </div>
+                  ) : (
+                    <CharacterAutocomplete
+                      characters={characters}
+                      value={formData.supervisor}
+                      onChange={(option) => setFormData({ ...formData, supervisor: option })}
+                      error={errors.supervisor}
+                      placeholder="Select or search for a supervising crafter..."
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Grunt Worker *
+                  </label>
+                  {charactersLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      Loading characters...
+                    </div>
+                  ) : (
+                    <CharacterAutocomplete
+                      characters={characters}
+                      value={formData.gruntWorker}
+                      onChange={(option) => setFormData({ ...formData, gruntWorker: option })}
+                      error={errors.gruntWorker}
+                      placeholder="Select or search for a grunt worker..."
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Remove old Crafter section */}
 
             {/* Crafted Date */}
             <div>

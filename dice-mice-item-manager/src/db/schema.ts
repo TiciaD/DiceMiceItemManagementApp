@@ -34,6 +34,7 @@ export const houses = sqliteTable('house', {
   motto: text('motto'),
   bio: text('bio'),
   gold: integer('gold').notNull().default(0),
+  classCompetencyLevel: integer('class_competency_level').notNull().default(7), // Level at which class skills get +1 free point
 });
 
 export const accounts = sqliteTable(
@@ -123,12 +124,26 @@ export const potions = sqliteTable('potions', {
     .notNull(),
   consumedBy: text('consumed_by'), // User ID or character name
   consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }), // When consumed
-  craftedBy: text('crafted_by').notNull(), // User ID or character name
+  craftedBy: text('crafted_by').notNull(), // Display name (for backward compatibility and NPCs)
   craftedAt: integer('crafted_at', { mode: 'timestamp_ms' }).$defaultFn(
     () => new Date()
   ), // When crafted
   weight: real('weight').notNull(),
   specialIngredientDetails: text('special_ingredient_details'), // Specific details about the special ingredient used (e.g., "Bird" for Bane potion, "Perception" for Talent potion)
+
+  // Character tracking for mastery allocation
+  crafterCharacterId: text('crafter_character_id').references(
+    () => characters.id,
+    { onDelete: 'set null' }
+  ), // NULL if crafted by NPC/Unknown
+  isGruntWork: integer('is_grunt_work', { mode: 'boolean' })
+    .notNull()
+    .default(false), // Whether this was grunt work under supervision
+  supervisorCharacterId: text('supervisor_character_id').references(
+    () => characters.id,
+    { onDelete: 'set null' }
+  ), // Character ID of supervising crafter (for grunt work)
+
   // Partial consumption tracking
   usedAmount: text('used_amount'), // Amount consumed (e.g., "1 Dose", "1 die+1", "1 Turn")
   remainingAmount: text('remaining_amount'), // Amount remaining (e.g., "2 Doses", "4 die+1", "3 Turns")
@@ -416,6 +431,29 @@ export const characterSpellMastery = sqliteTable(
     // Compound primary key to ensure one mastery record per character-spell pair
     pk: primaryKey({
       columns: [table.characterId, table.spellTemplateId],
+    }),
+  })
+);
+
+// Character Skills - Tracks skill point investments per character
+export const characterSkills = sqliteTable(
+  'character_skills',
+  {
+    characterId: text('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    skillId: text('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    pointsInvested: integer('points_invested').notNull().default(0), // How many skill points spent in this skill
+    lastUpdated: integer('last_updated', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    // Compound primary key to ensure one skill record per character-skill pair
+    pk: primaryKey({
+      columns: [table.characterId, table.skillId],
     }),
   })
 );

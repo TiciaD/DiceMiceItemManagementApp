@@ -1,5 +1,4 @@
 // API logic tests without database dependencies
-import { eq } from 'drizzle-orm';
 
 // Mock next-auth
 jest.mock('next-auth', () => ({

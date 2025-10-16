@@ -18,7 +18,7 @@ export function CreateScrollModal({
   onScrollCreated
 }: CreateScrollModalProps) {
   const { data: session } = useSession();
-  const [material, setMaterial] = useState<MaterialType>('paper');
+  const [material, setMaterial] = useState<MaterialType>('parchment');
   const [crafterName, setCrafterName] = useState('');
   const [crafterLevel, setCrafterLevel] = useState<number>(1);
   const [isGruntWork, setIsGruntWork] = useState(false);
@@ -78,7 +78,7 @@ export function CreateScrollModal({
       }
 
       // Reset form
-      setMaterial('paper');
+      setMaterial('parchment');
       setCrafterName('');
       setCrafterLevel(1);
       setIsGruntWork(false);

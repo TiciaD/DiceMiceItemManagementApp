@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
-import { NextRequest } from 'next/server';
-
 // Mock data factory
 const createMockSpellTemplate = (overrides = {}) => ({
   id: 'spell1',

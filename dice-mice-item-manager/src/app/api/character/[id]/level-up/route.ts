@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db/client';
-import { characters, users } from '@/db/schema';
+import { characters, users, characterSkills } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function PATCH(
@@ -17,8 +17,14 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { newLevel, newXP, attributeChanges, hpGain, advancedMode } =
-      await request.json();
+    const {
+      newLevel,
+      newXP,
+      attributeChanges,
+      hpGain,
+      skillAllocations,
+      advancedMode,
+    } = await request.json();
 
     // Validate input
     if (
@@ -126,8 +132,51 @@ export async function PATCH(
     // Calculate new max HP
     const newMaxHP = currentCharacter.character.maxHP + hpGain;
 
+    const database = db();
+
+    // Apply skill allocations if provided
+    if (skillAllocations && Array.isArray(skillAllocations)) {
+      for (const allocation of skillAllocations) {
+        if (allocation.points > 0) {
+          // Check if record exists
+          const existing = await database
+            .select()
+            .from(characterSkills)
+            .where(
+              and(
+                eq(characterSkills.characterId, id),
+                eq(characterSkills.skillId, allocation.skillId)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            // Update existing record - add the new points to existing points
+            await database
+              .update(characterSkills)
+              .set({
+                pointsInvested: existing[0].pointsInvested + allocation.points,
+              })
+              .where(
+                and(
+                  eq(characterSkills.characterId, id),
+                  eq(characterSkills.skillId, allocation.skillId)
+                )
+              );
+          } else {
+            // Insert new record
+            await database.insert(characterSkills).values({
+              characterId: id,
+              skillId: allocation.skillId,
+              pointsInvested: allocation.points,
+            });
+          }
+        }
+      }
+    }
+
     // Update the character
-    await db()
+    await database
       .update(characters)
       .set({
         currentLevel: newLevel,

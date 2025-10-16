@@ -135,11 +135,6 @@ test.describe('Potion Creation Workflow', () => {
     // Test consumed filter
     await statusFilter.selectOption('consumed');
 
-    // If there are consumed potions, they should be shown
-    const consumedCards = await page
-      .locator('[data-testid="user-potion-card"]')
-      .count();
-
     // Reset filter
     await statusFilter.selectOption('all');
   });
@@ -157,9 +152,6 @@ test.describe('Potion Creation Workflow', () => {
       .locator('[data-testid="user-potion-card"]')
       .first();
     await expect(availablePotion).toBeVisible();
-
-    // Get the potion ID for later verification
-    const potionText = await availablePotion.textContent();
 
     // Click to open details modal
     await availablePotion.click();

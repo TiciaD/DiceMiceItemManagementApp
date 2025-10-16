@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { HouseWithCounty } from '@/types/houses';
+import { formatCurrency } from '@/lib/number-utils';
 import GoldManager from './GoldManager';
 
 interface HouseCardProps {
@@ -80,7 +81,7 @@ export default function HouseCard({ house, onUpdate }: HouseCardProps) {
               <div className="flex items-center mt-2">
                 <span className="text-lg sm:text-xl mr-2">🪙</span>
                 <span className="text-base sm:text-lg font-semibold text-white">
-                  {house.gold.toLocaleString()} Gold
+                  {formatCurrency(house.gold, 'Gold')}
                 </span>
               </div>
             </div>

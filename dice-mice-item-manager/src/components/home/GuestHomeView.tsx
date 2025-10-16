@@ -3,10 +3,10 @@ export default function GuestHomeView() {
     <main className="container mx-auto px-6 py-12">
       <div className="text-center max-w-3xl mx-auto">
         <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-          Manage Your D&D Items with Ease
+          Manage Your Dice Mice Characters and Items with Ease
         </h2>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-          Keep track of all your magical items, weapons, and equipment in one place.
+          Keep track of all your characters, magical items, weapons, and equipment in one place.
           Connect with Discord to get started!
         </p>
 

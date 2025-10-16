@@ -18,11 +18,24 @@ const eslintConfig = [
       'out/**',
       'build/**',
       'next-env.d.ts',
+      '.github/**',
     ],
   },
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  // Allow require() in test files and config files
+  {
+    files: [
+      '**/*.test.{ts,tsx,js,jsx}',
+      '**/__tests__/**/*.{ts,tsx,js,jsx}',
+      '*.config.{js,mjs}',
+      'jest.*.{js,mjs}',
+    ],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 ];

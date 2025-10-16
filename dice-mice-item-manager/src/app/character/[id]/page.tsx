@@ -23,6 +23,8 @@ import { HPEditor } from '@/components/character-details/HPEditor';
 import { XPEditor } from '@/components/character-details/XPEditor';
 import { CharacterInfoEditor } from '@/components/character-details/CharacterInfoEditor';
 import { LevelUpModal } from '@/components/character-details/LevelUpModal';
+import { CharacterSkillsTab } from '@/components/character-details/CharacterSkillsTab';
+import { CharacterMasteryTab } from '@/components/character-details/CharacterMasteryTab';
 import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';
 
 interface CharacterDetails {
@@ -504,7 +506,7 @@ export default function CharacterDetailsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
           <TabGroup key={`character-${character.id}-${character.updatedAt}-${character.currentLevel}`}>
             <TabList className="flex space-x-1 rounded-t-lg bg-blue-900/20 p-1">
-              {['General Info', 'Stats', 'Abilities'].map((category) => (
+              {['General Info', 'Stats', 'Skills', 'Abilities', 'Mastery'].map((category) => (
                 <Tab
                   key={category}
                   className={({ selected }) =>
@@ -603,6 +605,14 @@ export default function CharacterDetailsPage() {
                 </div>
               </TabPanel>
 
+              {/* Skills Tab */}
+              <TabPanel className="focus:outline-none">
+                <CharacterSkillsTab
+                  characterId={characterId}
+                  characterStats={baseStats}
+                />
+              </TabPanel>
+
               {/* Abilities Tab */}
               <TabPanel className="focus:outline-none">
                 <ClassAbilitiesSection
@@ -610,6 +620,11 @@ export default function CharacterDetailsPage() {
                   futureAbilities={classAbilities.future}
                   currentLevel={character.currentLevel}
                 />
+              </TabPanel>
+
+              {/* Mastery Tab */}
+              <TabPanel className="focus:outline-none">
+                <CharacterMasteryTab characterId={characterId} />
               </TabPanel>
             </TabPanels>
           </TabGroup>
@@ -620,7 +635,11 @@ export default function CharacterDetailsPage() {
           <LevelUpModal
             isOpen={true}
             onClose={() => setLevelUpData(null)}
-            character={character}
+            character={{
+              ...character,
+              classId: character.class?.id || '',
+              hitDie: character.class?.hitDie
+            }}
             newLevel={levelUpData.newLevel}
             newXP={levelUpData.newXP}
             onLevelUpComplete={handleLevelUpComplete}

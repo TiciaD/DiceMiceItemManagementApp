@@ -4,7 +4,7 @@ import { PotionWithTemplate } from '@/types/potions';
 
 // Mock the date utils
 jest.mock('@/lib/dateUtils', () => ({
-  formatInGameDateShort: jest.fn((_date: any) => '15th Day of Spring'),
+  formatInGameDateShort: jest.fn(() => '15th Day of Spring'),
 }));
 
 describe('UserPotionCard', () => {

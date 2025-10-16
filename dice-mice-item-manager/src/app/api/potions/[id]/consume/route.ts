@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/db/client';
 import { potions, userPotions, potionTemplates } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { awardCraftingMastery } from '@/lib/mastery-utils';
 
 export async function POST(
   request: NextRequest,
@@ -117,6 +118,25 @@ export async function POST(
       .set(updateData)
       .where(eq(potions.id, potionId))
       .returning();
+
+    // Award mastery to crafting characters if potion is fully consumed
+    if (!isPartialConsumption) {
+      try {
+        // Determine the final potency (use actualPotency if it was updated, otherwise original)
+        const finalPotency = actualPotency || potion.craftedPotency;
+
+        await awardCraftingMastery(
+          potion.potionTemplateId,
+          finalPotency,
+          potion.crafterCharacterId,
+          potion.isGruntWork,
+          potion.supervisorCharacterId
+        );
+      } catch (masteryError) {
+        // Log the error but don't fail the consumption
+        console.error('Failed to award mastery:', masteryError);
+      }
+    }
 
     return NextResponse.json({
       success: true,

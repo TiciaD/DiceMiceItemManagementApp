@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
 interface LevelUpModalProps {
@@ -9,6 +9,7 @@ interface LevelUpModalProps {
   character: {
     id: string;
     name: string;
+    classId: string;
     currentLevel: number;
     currentSTR: number;
     currentCON: number;
@@ -17,9 +18,7 @@ interface LevelUpModalProps {
     currentWIS: number;
     currentCHA: number;
     maxHP: number;
-    class: {
-      hitDie: string;
-    } | null;
+    hitDie?: string; // This might come from joined class data
   };
   newLevel: number;
   newXP: number;
@@ -51,7 +50,7 @@ const parseHitDie = (hitDie: string): number => {
 };
 
 export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLevelUpComplete, sequenceInfo }: LevelUpModalProps) {
-  const [step, setStep] = useState<'attributes' | 'hitpoints' | 'confirm'>('attributes');
+  const [step, setStep] = useState<'attributes' | 'skills' | 'hitpoints' | 'confirm'>('attributes');
   const [attributeChanges, setAttributeChanges] = useState({
     STR: 0,
     CON: 0,
@@ -65,13 +64,47 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [advancedMode, setAdvancedMode] = useState(false);
   const [manualHPGain, setManualHPGain] = useState('');
+  const [skillAllocations, setSkillAllocations] = useState<Record<string, number>>({});
+  const [newLevelSkillPoints, setNewLevelSkillPoints] = useState(0);
+  const [skillsData, setSkillsData] = useState<any>(null);
+  const [loadingSkills, setLoadingSkills] = useState(false);
 
   const attributeCap = advancedMode ? 30 : getAttributeCap(newLevel); // Higher cap in advanced mode
   const pointsToSpend = advancedMode ? 20 : 2; // More flexible in advanced mode
   const pointsSpent = Object.values(attributeChanges).reduce((sum, val) => sum + val, 0);
   const canProceed = advancedMode ?
     pointsSpent >= 0 : // Any positive allocation in advanced mode
-    (pointsSpent === pointsToSpend && Object.entries(attributeChanges).filter(([_, val]) => val > 0).length === 2);  // Reset state when modal opens
+    (pointsSpent === pointsToSpend && Object.entries(attributeChanges).filter(([, val]) => val > 0).length === 2); const fetchNewLevelSkillPoints = useCallback(async () => {
+      try {
+        setLoadingSkills(true);
+        // Get class base attributes for the new level to see how many skill points they get
+        const response = await fetch(`/api/classes/${character.classId || ''}/base-attributes?level=${newLevel}`);
+        if (response.ok) {
+          const data = await response.json();
+          setNewLevelSkillPoints(data.skillRanks || 0);
+        }
+
+        // Also fetch current skills data
+        const skillsResponse = await fetch(`/api/character/${character.id}/skills`);
+        if (skillsResponse.ok) {
+          const skillsData = await skillsResponse.json();
+          setSkillsData(skillsData);
+
+          // Initialize skill allocations with current values - only unspent points can be changed
+          const allocations: Record<string, number> = {};
+          skillsData.skills.forEach((skill: any) => {
+            allocations[skill.id] = 0; // Only new points can be allocated in level up
+          });
+          setSkillAllocations(allocations);
+        }
+      } catch (error) {
+        console.error('Error fetching skill data:', error);
+      } finally {
+        setLoadingSkills(false);
+      }
+    }, [character.classId, character.id, newLevel]);
+
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setStep('attributes');
@@ -80,8 +113,12 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
       setTotalHPGain(0);
       setAdvancedMode(false);
       setManualHPGain('');
+      setSkillAllocations({});
+      setNewLevelSkillPoints(0);
+      setSkillsData(null);
+      fetchNewLevelSkillPoints();
     }
-  }, [isOpen, newLevel]);
+  }, [isOpen, newLevel, fetchNewLevelSkillPoints]);
 
   const handleAttributeChange = (attr: keyof typeof attributeChanges, delta: number) => {
     const currentValue = character[`current${attr}`];
@@ -102,7 +139,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
       if (newValue <= attributeCap && newValue >= currentValue) {
         const newChanges = { ...attributeChanges, [attr]: attributeChanges[attr] + delta };
         const newPointsSpent = Object.values(newChanges).reduce((sum, val) => sum + val, 0);
-        const attributesWithPoints = Object.entries(newChanges).filter(([_, val]) => val > 0).length;
+        const attributesWithPoints = Object.entries(newChanges).filter(([, val]) => val > 0).length;
 
         // Rule: Exactly 2 points total, must be in different attributes (max 1 point per attribute)
         const maxPointsPerAttribute = 1;
@@ -113,8 +150,10 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
         }
       }
     }
-  }; const rollHitPoints = () => {
-    const hitDieSides = parseHitDie(character.class?.hitDie || '1d6');
+  };
+
+  const rollHitPoints = () => {
+    const hitDieSides = parseHitDie(character.hitDie || '1d6');
     const conModifier = getModifier(character.currentCON + attributeChanges.CON);
 
     let roll = Math.floor(Math.random() * hitDieSides) + 1;
@@ -149,6 +188,9 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
           newXP,
           attributeChanges,
           hpGain: totalHPGain,
+          skillAllocations: Object.entries(skillAllocations)
+            .filter(([, points]) => points > 0)
+            .map(([skillId, points]) => ({ skillId, points })),
           advancedMode,
         }),
       });
@@ -227,7 +269,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                       (newValue < attributeCap && pointsSpent < pointsToSpend) :
                       (newValue < attributeCap && pointsSpent < pointsToSpend &&
                         change === 0 && // Can only add to attributes that don't have points yet
-                        Object.entries(attributeChanges).filter(([_, val]) => val > 0).length < 2); // Max 2 different attributes
+                        Object.entries(attributeChanges).filter(([, val]) => val > 0).length < 2); // Max 2 different attributes
 
                     const canDecrease = advancedMode ?
                       (newValue > 1) : // Prevent going below 1 in advanced mode
@@ -276,8 +318,137 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                     Cancel Level Up
                   </button> */}
                   <button
-                    onClick={() => setStep('hitpoints')}
+                    onClick={() => setStep('skills')}
                     disabled={!canProceed}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next: Allocate Skill Points
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 'skills' && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    You have {newLevelSkillPoints} skill points to allocate at level {newLevel}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    You must spend all skill points before leveling up. These allocations will be locked once you complete the level up.
+                  </p>
+                </div>
+
+                {loadingSkills ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600 dark:text-gray-300">Loading skills...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">Skill Points Available:</span>
+                        <span className="text-xl font-bold text-blue-900 dark:text-blue-100">{newLevelSkillPoints}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">Points Allocated:</span>
+                        <span className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                          {Object.values(skillAllocations).reduce((sum, points) => sum + points, 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">Remaining:</span>
+                        <span className={`text-xl font-bold ${(newLevelSkillPoints - Object.values(skillAllocations).reduce((sum, points) => sum + points, 0)) === 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                          }`}>
+                          {newLevelSkillPoints - Object.values(skillAllocations).reduce((sum, points) => sum + points, 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {skillsData && (
+                      <div className="max-h-96 overflow-y-auto space-y-3">
+                        {skillsData.skills.map((skill: any) => {
+                          const currentAllocation = skillAllocations[skill.id] || 0;
+                          const totalPoints = skill.pointsInvested + currentAllocation;
+                          const remainingToAllocate = newLevelSkillPoints - Object.values(skillAllocations).reduce((sum, points) => sum + points, 0);
+
+                          return (
+                            <div key={skill.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-gray-900 dark:text-white">{skill.name}</h4>
+                                    {skill.isClassSkill && (
+                                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                                        Class Skill
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">{skill.associatedStat}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Current: {skill.pointsInvested} points | New Total: {totalPoints} points
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      if (currentAllocation > 0) {
+                                        setSkillAllocations(prev => ({
+                                          ...prev,
+                                          [skill.id]: currentAllocation - 1
+                                        }));
+                                      }
+                                    }}
+                                    disabled={currentAllocation <= 0}
+                                    className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600 transition-colors"
+                                  >
+                                    -
+                                  </button>
+
+                                  <div className="text-center min-w-[3rem]">
+                                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                                      +{currentAllocation}
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    onClick={() => {
+                                      if (remainingToAllocate > 0) {
+                                        setSkillAllocations(prev => ({
+                                          ...prev,
+                                          [skill.id]: currentAllocation + 1
+                                        }));
+                                      }
+                                    }}
+                                    disabled={remainingToAllocate <= 0}
+                                    className="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 transition-colors"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setStep('attributes')}
+                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setStep('hitpoints')}
+                    disabled={Object.values(skillAllocations).reduce((sum, points) => sum + points, 0) !== newLevelSkillPoints}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next: Roll Hit Points
@@ -292,7 +463,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                   <p className="text-gray-600 dark:text-gray-300 mb-4">
                     {advancedMode ?
                       'Set your hit point gain manually or roll normally' :
-                      `Roll for hit points using your ${character.class?.hitDie || '1d6'}`
+                      `Roll for hit points using your ${character.hitDie || '1d6'}`
                     }
                   </p>
                   {!advancedMode && (
@@ -314,16 +485,16 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                           <input
                             type="number"
                             min={advancedMode ? "1" : "1"}
-                            max={advancedMode ? "50" : parseHitDie(character.class?.hitDie || '1d6').toString()}
+                            max={advancedMode ? "50" : parseHitDie(character.hitDie || '1d6').toString()}
                             value={manualHPGain}
                             onChange={(e) => setManualHPGain(e.target.value)}
-                            placeholder={advancedMode ? "Enter HP gain" : `1-${parseHitDie(character.class?.hitDie || '1d6')}`}
+                            placeholder={advancedMode ? "Enter HP gain" : `1-${parseHitDie(character.hitDie || '1d6')}`}
                             className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white text-center"
                           />
                           <button
                             onClick={() => {
                               const value = parseInt(manualHPGain);
-                              const hitDieSides = parseHitDie(character.class?.hitDie || '1d6');
+                              const hitDieSides = parseHitDie(character.hitDie || '1d6');
                               const conModifier = getModifier(character.currentCON + attributeChanges.CON);
 
                               if (!isNaN(value) && value > 0) {
@@ -353,7 +524,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                               }
                             }}
                             disabled={!manualHPGain || isNaN(parseInt(manualHPGain)) || parseInt(manualHPGain) <= 0 ||
-                              (advancedMode ? parseInt(manualHPGain) > 50 : parseInt(manualHPGain) > parseHitDie(character.class?.hitDie || '1d6'))}
+                              (advancedMode ? parseInt(manualHPGain) > 50 : parseInt(manualHPGain) > parseHitDie(character.hitDie || '1d6'))}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Set HP
@@ -364,7 +535,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                           <div className="text-xs mt-1">
                             {(() => {
                               const value = parseInt(manualHPGain);
-                              const hitDieSides = parseHitDie(character.class?.hitDie || '1d6');
+                              const hitDieSides = parseHitDie(character.hitDie || '1d6');
                               const conModifier = getModifier(character.currentCON + attributeChanges.CON);
 
                               if (isNaN(value) || value <= 0) {
@@ -378,7 +549,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                                 return <span className="text-green-600 dark:text-green-400">Valid HP gain</span>;
                               } else {
                                 if (value > hitDieSides) {
-                                  return <span className="text-red-600 dark:text-red-400">Maximum {hitDieSides} HP for {character.class?.hitDie || '1d6'}</span>;
+                                  return <span className="text-red-600 dark:text-red-400">Maximum {hitDieSides} HP for {character.hitDie || '1d6'}</span>;
                                 }
                                 if (value <= conModifier && conModifier < hitDieSides) {
                                   return <span className="text-yellow-600 dark:text-yellow-400">Low roll - would normally be rerolled</span>;
@@ -462,7 +633,7 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                       Cancel
                     </button> */}
                     <button
-                      onClick={() => setStep('attributes')}
+                      onClick={() => setStep('skills')}
                       className="cursor-pointer px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                     >
                       Back
@@ -487,11 +658,11 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                     <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">Attribute Changes</h4>
                     {Object.entries(attributeChanges)
-                      .filter(([_, change]) => change > 0)
+                      .filter(([, change]) => change > 0)
                       .map(([attr, change]) => {
                         const currentValue = character[`current${attr}` as keyof typeof character] as number;
                         return (
@@ -501,6 +672,27 @@ export function LevelUpModal({ isOpen, onClose, character, newLevel, newXP, onLe
                           </div>
                         );
                       })}
+                    {Object.entries(attributeChanges).filter(([, change]) => change > 0).length === 0 && (
+                      <p className="text-sm text-gray-500">No changes</p>
+                    )}
+                  </div>
+
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                    <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-3">Skill Point Allocations</h4>
+                    {skillsData && Object.entries(skillAllocations)
+                      .filter(([, points]) => points > 0)
+                      .map(([skillId, points]) => {
+                        const skill = skillsData.skills.find((s: any) => s.id === skillId);
+                        return (
+                          <div key={skillId} className="flex justify-between text-sm">
+                            <span>{skill?.name}:</span>
+                            <span>+{points} points</span>
+                          </div>
+                        );
+                      })}
+                    {Object.entries(skillAllocations).filter(([, points]) => points > 0).length === 0 && (
+                      <p className="text-sm text-gray-500">No allocations</p>
+                    )}
                   </div>
 
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">

@@ -17,6 +17,25 @@ export type PotionWithTemplate = Potion & {
   template: PotionTemplateWithDetails;
 };
 
+// Character type for autocomplete
+export interface Character {
+  id: string;
+  name: string;
+  currentLevel: number;
+  house: {
+    id: string;
+    name: string;
+  };
+}
+
+// Crafter option for autocomplete
+export interface CrafterOption {
+  id: string;
+  type: 'character' | 'free';
+  display: string;
+  character?: Character;
+}
+
 // Rarity colors for UI
 export const rarityColors = {
   common: 'bg-gray-100 text-gray-800 border-gray-300',
@@ -55,9 +74,34 @@ export interface CreatePotionFormData {
   potionTemplateId: string;
   customId: string;
   hasCustomId: boolean;
-  craftedBy: string;
+  craftedBy: string; // Keep as string for backend compatibility (display name)
   craftedAt: Date;
   craftedPotency: PotencyType;
   weight: number;
   specialIngredientDetails?: string; // Optional details about the special ingredient used
+
+  // Character tracking for mastery allocation
+  crafterCharacterId?: string | null; // Character ID of the crafter (null for NPCs/Unknown)
+  isGruntWork: boolean;
+  supervisorCharacterId?: string | null; // Character ID of supervising crafter (for grunt work)
+}
+
+// Internal form data for the AddPotionModal component
+export interface CreatePotionFormState {
+  potionTemplateId: string;
+  customId: string;
+  hasCustomId: boolean;
+  craftedBy: CrafterOption | null; // Use CrafterOption for UI
+  craftedAt: Date;
+  craftedPotency: PotencyType;
+  weight: number;
+  specialIngredientDetails?: string; // Optional details about the special ingredient used
+
+  // Grunt work functionality
+  isGruntWork: boolean;
+  supervisorName: string;
+  supervisorLevel: number;
+  gruntWorkerName: string;
+  supervisor: CrafterOption | null; // Supervisor selection for UI
+  gruntWorker: CrafterOption | null; // Grunt worker selection for UI
 }

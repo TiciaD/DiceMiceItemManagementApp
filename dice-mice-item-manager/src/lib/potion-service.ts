@@ -57,6 +57,12 @@ export async function createPotionInstance(
         craftedAt: formData.craftedAt,
         weight: formData.weight,
         specialIngredientDetails: formData.specialIngredientDetails || null,
+
+        // Character tracking for mastery allocation
+        crafterCharacterId: formData.crafterCharacterId || null,
+        isGruntWork: formData.isGruntWork,
+        supervisorCharacterId: formData.supervisorCharacterId || null,
+
         usedAmount: null,
         remainingAmount: null,
         isFullyConsumed: false,
@@ -95,6 +101,12 @@ export async function getUserPotions(userId: string) {
         specialIngredientDetails: potions.specialIngredientDetails,
         consumedBy: potions.consumedBy,
         consumedAt: potions.consumedAt,
+
+        // Character tracking fields
+        crafterCharacterId: potions.crafterCharacterId,
+        isGruntWork: potions.isGruntWork,
+        supervisorCharacterId: potions.supervisorCharacterId,
+
         // Partial consumption fields
         usedAmount: potions.usedAmount,
         remainingAmount: potions.remainingAmount,
@@ -134,6 +146,12 @@ export async function getUserPotions(userId: string) {
       specialIngredientDetails: row.specialIngredientDetails,
       consumedBy: row.consumedBy,
       consumedAt: row.consumedAt,
+
+      // Character tracking fields
+      crafterCharacterId: row.crafterCharacterId,
+      isGruntWork: row.isGruntWork,
+      supervisorCharacterId: row.supervisorCharacterId,
+
       // Partial consumption fields
       usedAmount: row.usedAmount,
       remainingAmount: row.remainingAmount,

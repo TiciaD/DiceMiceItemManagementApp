@@ -236,25 +236,6 @@ describe('/api/scrolls/[id]/consume', () => {
     });
 
     it('should reject scroll not owned by user', async () => {
-      const scrollOwnedByOtherUser = [
-        {
-          scrolls: {
-            id: 'scroll123',
-            spellTemplateId: 'spell123',
-            material: 'vellum',
-            consumedBy: null,
-            consumedAt: null,
-            craftedBy: 'Gandalf',
-            craftedAt: new Date('2023-11-01T10:00:00.000Z'),
-            weight: 0.1,
-          },
-          userScrolls: {
-            scrollId: 'scroll123',
-            userId: 'other-user',
-          },
-        },
-      ];
-
       // Mock scroll lookup returns empty (filtered by user)
       mockDb.limit.mockResolvedValue([]);
 

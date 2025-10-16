@@ -192,7 +192,7 @@ export default function MyItems() {
             🎒 My Items
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Manage your personal collection of D&D items and equipment.
+            Manage your personal collection of Dice Mice items and equipment.
           </p>
         </div>
 

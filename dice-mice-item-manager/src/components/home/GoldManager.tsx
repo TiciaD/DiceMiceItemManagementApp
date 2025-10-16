@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { HouseWithCounty } from '@/types/houses';
+import { formatNumber } from '@/lib/number-utils';
 
 interface GoldManagerProps {
   house: HouseWithCounty;
@@ -95,7 +96,7 @@ export default function GoldManager({ house, onUpdate }: GoldManagerProps) {
       <div className="space-y-4">
         <div>
           <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-            Current Gold: <span className="font-semibold">{house.gold.toLocaleString()}</span>
+            Current Gold: <span className="font-semibold">{formatNumber(house.gold)}</span>
           </p>
 
           <label htmlFor="goldAmount" className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
@@ -125,22 +126,22 @@ export default function GoldManager({ house, onUpdate }: GoldManagerProps) {
             disabled={isLoading || !amount || parseInt(amount) <= 0}
             className="cursor-pointer flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-md font-medium transition-colors disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Adding...' : `Add ${amount ? parseInt(amount).toLocaleString() : '0'} Gold`}
+            {isLoading ? 'Adding...' : `Add ${amount ? formatNumber(parseInt(amount)) : '0'} Gold`}
           </button>
           <button
             onClick={() => handleGoldTransaction('remove')}
             disabled={isLoading || !amount || parseInt(amount) <= 0 || parseInt(amount) > house.gold}
             className="cursor-pointer flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-md font-medium transition-colors disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Removing...' : `Remove ${amount ? parseInt(amount).toLocaleString() : '0'} Gold`}
+            {isLoading ? 'Removing...' : `Remove ${amount ? formatNumber(parseInt(amount)) : '0'} Gold`}
           </button>
         </div>
 
         {amount && parseInt(amount) > 0 && (
           <div className="text-sm text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-md">
             <p><strong>Preview:</strong></p>
-            <p>Add: {house.gold.toLocaleString()} + {parseInt(amount).toLocaleString()} = {(house.gold + parseInt(amount)).toLocaleString()}</p>
-            <p>Remove: {house.gold.toLocaleString()} - {parseInt(amount).toLocaleString()} = {Math.max(0, house.gold - parseInt(amount)).toLocaleString()}</p>
+            <p>Add: {formatNumber(house.gold)} + {formatNumber(parseInt(amount))} = {formatNumber(house.gold + parseInt(amount))}</p>
+            <p>Remove: {formatNumber(house.gold)} - {formatNumber(parseInt(amount))} = {formatNumber(Math.max(0, house.gold - parseInt(amount)))}</p>
           </div>
         )}
       </div>

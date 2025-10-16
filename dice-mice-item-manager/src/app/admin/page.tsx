@@ -128,11 +128,8 @@ export default function AdminPage() {
 
                   <button
                     onClick={() => updateRole('DM')}
-                    disabled={loading || currentUser.role === 'DM'}
-                    className={`px-4 py-2 rounded-md transition-colors ${currentUser.role === 'DM'
-                      ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                      : 'bg-purple-600 hover:bg-purple-700 text-white'
-                      }`}
+                    disabled
+                    className="px-4 py-2 rounded-md transition-colors bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
                   >
                     Set as Dungeon Master (DM)
                   </button>
