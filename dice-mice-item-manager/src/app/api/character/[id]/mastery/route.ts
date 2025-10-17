@@ -2,11 +2,13 @@ import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db/client';
-import { potionTemplates } from '@/db/schema';
+import { potionTemplates, spellTemplates } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   getCharacterPotionMastery,
   updateCharacterPotionMastery,
+  getCharacterSpellMastery,
+  updateCharacterSpellMastery,
 } from '@/lib/mastery-utils';
 
 // GET - Fetch character's potion mastery and available discovered potions
@@ -24,7 +26,8 @@ export async function GET(
     const database = db();
 
     // Get character's current mastery levels
-    const currentMastery = await getCharacterPotionMastery(characterId);
+    const currentPotionMastery = await getCharacterPotionMastery(characterId);
+    const currentSpellMastery = await getCharacterSpellMastery(characterId);
 
     // Get all discovered potions (for the dropdown when adding new mastery)
     const discoveredPotions = await database
@@ -37,9 +40,22 @@ export async function GET(
       .where(eq(potionTemplates.isDiscovered, true))
       .orderBy(potionTemplates.name);
 
-    // Enrich mastery data with potion template info
-    const enrichedMastery = await Promise.all(
-      currentMastery.map(async (mastery) => {
+    // Get all discovered spells (for the dropdown when adding new mastery)
+    const discoveredSpells = await database
+      .select({
+        id: spellTemplates.id,
+        name: spellTemplates.name,
+        baseEffect: spellTemplates.baseEffect,
+        school: spellTemplates.school,
+        level: spellTemplates.level,
+      })
+      .from(spellTemplates)
+      .where(eq(spellTemplates.isDiscovered, true))
+      .orderBy(spellTemplates.name);
+
+    // Enrich mastery data with template info
+    const enrichedPotionMastery = await Promise.all(
+      currentPotionMastery.map(async (mastery) => {
         const potionTemplate = await database
           .select({
             id: potionTemplates.id,
@@ -57,10 +73,33 @@ export async function GET(
       })
     );
 
+    const enrichedSpellMastery = await Promise.all(
+      currentSpellMastery.map(async (mastery) => {
+        const spellTemplate = await database
+          .select({
+            id: spellTemplates.id,
+            name: spellTemplates.name,
+            baseEffect: spellTemplates.baseEffect,
+            school: spellTemplates.school,
+            level: spellTemplates.level,
+          })
+          .from(spellTemplates)
+          .where(eq(spellTemplates.id, mastery.spellTemplateId))
+          .limit(1);
+
+        return {
+          ...mastery,
+          spellTemplate: spellTemplate[0] || null,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      currentMastery: enrichedMastery,
+      currentPotionMastery: enrichedPotionMastery,
+      currentSpellMastery: enrichedSpellMastery,
       discoveredPotions,
+      discoveredSpells,
     });
   } catch (error) {
     console.error('Error fetching character mastery:', error);
@@ -84,13 +123,26 @@ export async function PATCH(
 
     const { id: characterId } = await params;
     const body = await request.json();
-    const { potionTemplateId, masteryLevel } = body;
+    const { potionTemplateId, spellTemplateId, masteryLevel } = body;
 
-    // Validate input
-    if (!potionTemplateId || typeof masteryLevel !== 'number') {
+    // Validate input - must have either potionTemplateId or spellTemplateId, but not both
+    if (
+      (!potionTemplateId && !spellTemplateId) ||
+      (potionTemplateId && spellTemplateId)
+    ) {
       return NextResponse.json(
         {
-          error: 'Missing or invalid potionTemplateId or masteryLevel',
+          error:
+            'Must provide either potionTemplateId or spellTemplateId, but not both',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (typeof masteryLevel !== 'number') {
+      return NextResponse.json(
+        {
+          error: 'Invalid masteryLevel',
         },
         { status: 400 }
       );
@@ -108,33 +160,65 @@ export async function PATCH(
 
     const database = db();
 
-    // Verify the potion template exists and is discovered
-    const potionTemplate = await database
-      .select()
-      .from(potionTemplates)
-      .where(
-        and(
-          eq(potionTemplates.id, potionTemplateId),
-          eq(potionTemplates.isDiscovered, true)
+    if (potionTemplateId) {
+      // Handle potion mastery update
+      // Verify the potion template exists and is discovered
+      const potionTemplate = await database
+        .select()
+        .from(potionTemplates)
+        .where(
+          and(
+            eq(potionTemplates.id, potionTemplateId),
+            eq(potionTemplates.isDiscovered, true)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (potionTemplate.length === 0) {
-      return NextResponse.json(
-        {
-          error: 'Potion template not found or not discovered',
-        },
-        { status: 404 }
+      if (potionTemplate.length === 0) {
+        return NextResponse.json(
+          {
+            error: 'Potion template not found or not discovered',
+          },
+          { status: 404 }
+        );
+      }
+
+      // Update the potion mastery level
+      await updateCharacterPotionMastery(
+        characterId,
+        potionTemplateId,
+        masteryLevel
+      );
+    } else if (spellTemplateId) {
+      // Handle spell mastery update
+      // Verify the spell template exists and is discovered
+      const spellTemplate = await database
+        .select()
+        .from(spellTemplates)
+        .where(
+          and(
+            eq(spellTemplates.id, spellTemplateId),
+            eq(spellTemplates.isDiscovered, true)
+          )
+        )
+        .limit(1);
+
+      if (spellTemplate.length === 0) {
+        return NextResponse.json(
+          {
+            error: 'Spell template not found or not discovered',
+          },
+          { status: 404 }
+        );
+      }
+
+      // Update the spell mastery level
+      await updateCharacterSpellMastery(
+        characterId,
+        spellTemplateId,
+        masteryLevel
       );
     }
-
-    // Update the mastery level
-    await updateCharacterPotionMastery(
-      characterId,
-      potionTemplateId,
-      masteryLevel
-    );
 
     return NextResponse.json({
       success: true,

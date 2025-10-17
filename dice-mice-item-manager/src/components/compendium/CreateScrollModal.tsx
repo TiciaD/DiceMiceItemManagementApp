@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { SpellTemplateWithDetails, materialDisplayNames, MaterialType } from '@/types/spells';
+import { CharacterAutocomplete, Character, CrafterOption } from '@/components/ui/CharacterAutocomplete';
 
 interface CreateScrollModalProps {
   template: SpellTemplateWithDetails | null;
@@ -19,15 +20,35 @@ export function CreateScrollModal({
 }: CreateScrollModalProps) {
   const { data: session } = useSession();
   const [material, setMaterial] = useState<MaterialType>('parchment');
-  const [crafterName, setCrafterName] = useState('');
+  const [crafter, setCrafter] = useState<CrafterOption | null>(null);
   const [crafterLevel, setCrafterLevel] = useState<number>(1);
   const [isGruntWork, setIsGruntWork] = useState(false);
-  const [supervisorName, setSupervisorName] = useState('');
+  const [supervisor, setSupervisor] = useState<CrafterOption | null>(null);
   const [supervisorLevel, setSupervisorLevel] = useState<number>(1);
-  const [gruntWorkerName, setGruntWorkerName] = useState('');
+  const [gruntWorker, setGruntWorker] = useState<CrafterOption | null>(null);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Fetch characters when modal opens
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      try {
+        const response = await fetch('/api/characters');
+        const data = await response.json();
+        if (data.success) {
+          setCharacters(data.characters);
+        }
+      } catch (error) {
+        console.error('Error fetching characters:', error);
+      }
+    };
+
+    if (isOpen) {
+      fetchCharacters();
+    }
+  }, [isOpen]);
 
   if (!isOpen || !template) return null;
 
@@ -37,20 +58,22 @@ export function CreateScrollModal({
   const canCraftSpell = template.level <= maxCraftableSpellLevel;
 
   // Determine who actually crafted it (for storage)
-  const actualCrafter = isGruntWork ? gruntWorkerName : crafterName;
+  const actualCrafterName = isGruntWork
+    ? (gruntWorker?.type === 'character' ? gruntWorker.character!.name : gruntWorker?.display || '')
+    : (crafter?.type === 'character' ? crafter.character!.name : crafter?.display || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id || isSubmitting || !canCraftSpell) return;
 
     // Validation
-    if (!actualCrafter.trim()) {
-      setError('Please enter the crafter name.');
+    if (!actualCrafterName.trim()) {
+      setError('Please select who crafted this scroll.');
       return;
     }
 
-    if (isGruntWork && (!supervisorName.trim() || !gruntWorkerName.trim())) {
-      setError('Please enter both supervisor and grunt worker names.');
+    if (isGruntWork && (!supervisor || !gruntWorker)) {
+      setError('Please select both supervisor and grunt worker.');
       return;
     }
 
@@ -66,7 +89,7 @@ export function CreateScrollModal({
         body: JSON.stringify({
           spellTemplateId: template.id,
           material,
-          craftedBy: actualCrafter.trim(),
+          craftedBy: actualCrafterName.trim(),
           crafterLevel: effectiveCrafterLevel,
           weight: 0.33, // All scrolls default to 1/3rd of a slot capacity
         }),
@@ -79,12 +102,12 @@ export function CreateScrollModal({
 
       // Reset form
       setMaterial('parchment');
-      setCrafterName('');
+      setCrafter(null);
       setCrafterLevel(1);
       setIsGruntWork(false);
-      setSupervisorName('');
+      setSupervisor(null);
       setSupervisorLevel(1);
-      setGruntWorkerName('');
+      setGruntWorker(null);
       setError('');
 
       // Show success message
@@ -178,14 +201,13 @@ export function CreateScrollModal({
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Crafter Name
+                    Crafter
                   </label>
-                  <input
-                    type="text"
-                    value={crafterName}
-                    onChange={(e) => setCrafterName(e.target.value)}
-                    placeholder="Enter crafter name"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  <CharacterAutocomplete
+                    characters={characters}
+                    value={crafter}
+                    onChange={setCrafter}
+                    placeholder="Select or enter crafter name..."
                   />
                 </div>
 
@@ -211,14 +233,13 @@ export function CreateScrollModal({
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Supervising Crafter Name
+                    Supervising Crafter
                   </label>
-                  <input
-                    type="text"
-                    value={supervisorName}
-                    onChange={(e) => setSupervisorName(e.target.value)}
-                    placeholder="Enter supervisor's name"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  <CharacterAutocomplete
+                    characters={characters}
+                    value={supervisor}
+                    onChange={setSupervisor}
+                    placeholder="Select or enter supervisor name..."
                   />
                 </div>
 
@@ -241,14 +262,13 @@ export function CreateScrollModal({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Grunt Worker Name
+                    Grunt Worker
                   </label>
-                  <input
-                    type="text"
-                    value={gruntWorkerName}
-                    onChange={(e) => setGruntWorkerName(e.target.value)}
-                    placeholder="Enter grunt worker's name"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  <CharacterAutocomplete
+                    characters={characters}
+                    value={gruntWorker}
+                    onChange={setGruntWorker}
+                    placeholder="Select or enter grunt worker name..."
                   />
                 </div>
               </>

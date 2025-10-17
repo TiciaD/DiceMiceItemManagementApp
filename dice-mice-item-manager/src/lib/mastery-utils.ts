@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { characterPotionMastery } from '@/db/schema';
+import { characterPotionMastery, characterSpellMastery } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { PotencyType } from '@/types/potions';
 
@@ -174,7 +174,11 @@ export async function getCharacterPotionMastery(characterId: string) {
       .from(characterPotionMastery)
       .where(eq(characterPotionMastery.characterId, characterId));
 
-    return masteryData;
+    return masteryData.map((m) => ({
+      potionTemplateId: m.potionTemplateId,
+      masteryLevel: m.masteryLevel,
+      lastUpdated: m.lastUpdated.getTime(), // Convert Date to timestamp
+    }));
   } catch (error) {
     console.error('Error fetching character potion mastery:', error);
     throw error;
@@ -236,6 +240,140 @@ export async function updateCharacterPotionMastery(
     }
   } catch (error) {
     console.error('Error updating character potion mastery:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get a character's current spell mastery levels
+ */
+export async function getCharacterSpellMastery(characterId: string): Promise<
+  Array<{
+    spellTemplateId: string;
+    masteryLevel: number;
+    lastUpdated: number;
+  }>
+> {
+  const database = db();
+
+  const mastery = await database
+    .select({
+      spellTemplateId: characterSpellMastery.spellTemplateId,
+      masteryLevel: characterSpellMastery.masteryLevel,
+      lastUpdated: characterSpellMastery.lastUpdated,
+    })
+    .from(characterSpellMastery)
+    .where(eq(characterSpellMastery.characterId, characterId));
+
+  return mastery.map((m) => ({
+    spellTemplateId: m.spellTemplateId,
+    masteryLevel: m.masteryLevel,
+    lastUpdated: m.lastUpdated.getTime(), // Convert Date to timestamp
+  }));
+}
+
+/**
+ * Update a character's mastery level for a specific spell template
+ */
+export async function updateCharacterSpellMastery(
+  characterId: string,
+  spellTemplateId: string,
+  masteryLevel: number
+): Promise<void> {
+  // Clamp mastery level between 0 and 10
+  const clampedLevel = Math.max(0, Math.min(10, masteryLevel));
+
+  console.log(
+    `Updating spell mastery for character ${characterId}, spell ${spellTemplateId} to level ${clampedLevel}`
+  );
+
+  const database = db();
+
+  try {
+    // Check if the character already has mastery for this spell
+    const existingMastery = await database
+      .select()
+      .from(characterSpellMastery)
+      .where(
+        and(
+          eq(characterSpellMastery.characterId, characterId),
+          eq(characterSpellMastery.spellTemplateId, spellTemplateId)
+        )
+      )
+      .limit(1);
+
+    if (existingMastery.length > 0) {
+      // Update existing mastery level
+      await database
+        .update(characterSpellMastery)
+        .set({
+          masteryLevel: clampedLevel,
+          lastUpdated: sql`(unixepoch())`,
+        })
+        .where(
+          and(
+            eq(characterSpellMastery.characterId, characterId),
+            eq(characterSpellMastery.spellTemplateId, spellTemplateId)
+          )
+        );
+    } else {
+      // Create new mastery record
+      await database.insert(characterSpellMastery).values({
+        characterId,
+        spellTemplateId,
+        masteryLevel: clampedLevel,
+        lastUpdated: sql`(unixepoch())`,
+      });
+    }
+  } catch (error) {
+    console.error('Error updating character spell mastery:', error);
+    throw error;
+  }
+}
+
+/**
+ * Award mastery points to a character for a specific spell template
+ */
+export async function awardSpellMastery(
+  characterId: string,
+  spellTemplateId: string,
+  masteryPoints: number
+): Promise<void> {
+  if (masteryPoints <= 0) {
+    return; // No mastery to award
+  }
+
+  console.log(
+    `Awarding ${masteryPoints} mastery points to character ${characterId} for spell template ${spellTemplateId}`
+  );
+
+  const database = db();
+
+  try {
+    // Get current mastery level
+    const currentMastery = await database
+      .select()
+      .from(characterSpellMastery)
+      .where(
+        and(
+          eq(characterSpellMastery.characterId, characterId),
+          eq(characterSpellMastery.spellTemplateId, spellTemplateId)
+        )
+      )
+      .limit(1);
+
+    const currentLevel =
+      currentMastery.length > 0 ? currentMastery[0].masteryLevel : 0;
+    const newLevel = Math.min(10, currentLevel + masteryPoints); // Cap at 10
+
+    // Update mastery level
+    await updateCharacterSpellMastery(characterId, spellTemplateId, newLevel);
+
+    console.log(
+      `Spell mastery updated: ${currentLevel} -> ${newLevel} for character ${characterId}, spell ${spellTemplateId}`
+    );
+  } catch (error) {
+    console.error('Error awarding spell mastery:', error);
     throw error;
   }
 }
