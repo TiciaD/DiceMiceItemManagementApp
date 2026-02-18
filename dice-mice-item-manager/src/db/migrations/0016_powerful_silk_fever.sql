@@ -1,0 +1,1 @@
+ALTER TABLE `weapons` ADD `material` text DEFAULT 'steel' NOT NULL;

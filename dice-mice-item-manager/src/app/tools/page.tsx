@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SpellcastingCalculator from '@/components/tools/SpellcastingCalculator';
 import PotionMixingCalculator from '@/components/tools/PotionMixingCalculator';
 import PotionCraftingCalculator from '@/components/tools/PotionCraftingCalculator';
+import WeaponBuilder from '@/components/tools/WeaponBuilder';
 
 export default function ToolsPage() {
   const [activeCalculator, setActiveCalculator] = useState<string | null>(null);
@@ -15,6 +16,7 @@ export default function ToolsPage() {
       description: 'Calculate spellcraft check outcomes, willpower costs, and potential damage',
       icon: '🔮',
       component: SpellcastingCalculator,
+      enabled: true,
     },
     {
       id: 'potion-mixing',
@@ -22,6 +24,7 @@ export default function ToolsPage() {
       description: 'Calculate mortality check outcomes when drinking multiple potions',
       icon: '🧪',
       component: PotionMixingCalculator,
+      enabled: true,
     },
     {
       id: 'potion-crafting',
@@ -29,14 +32,15 @@ export default function ToolsPage() {
       description: 'Calculate crafting success rates for known and unknown potions',
       icon: '⚗️',
       component: PotionCraftingCalculator,
+      enabled: true,
     },
-    // Future calculators can be added here
     {
-      id: 'combat',
-      name: 'Combat Calculator',
-      description: 'Coming soon - Calculate attack rolls and damage',
+      id: 'weapon-builder',
+      name: 'Weapon Builder',
+      description: 'Design custom weapons with the dice ladder system',
       icon: '⚔️',
-      component: null,
+      component: WeaponBuilder,
+      enabled: true,
     },
   ];
 
@@ -60,11 +64,11 @@ export default function ToolsPage() {
             {calculators.map((calculator) => (
               <div
                 key={calculator.id}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 ${calculator.component
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 transition-all duration-200 ${calculator.enabled
                   ? 'hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer'
                   : 'opacity-60 cursor-not-allowed'
                   }`}
-                onClick={() => calculator.component && setActiveCalculator(calculator.id)}
+                onClick={() => calculator.enabled && setActiveCalculator(calculator.id)}
               >
                 <div className="text-center">
                   <div className="text-4xl mb-4">{calculator.icon}</div>
@@ -74,7 +78,7 @@ export default function ToolsPage() {
                   <p className="text-gray-600 dark:text-gray-300 text-sm">
                     {calculator.description}
                   </p>
-                  {calculator.component && (
+                  {calculator.enabled && (
                     <button className="cursor-pointer mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors">
                       Open Calculator
                     </button>

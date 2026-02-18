@@ -457,3 +457,110 @@ export const characterSkills = sqliteTable(
     }),
   })
 );
+
+// Weapon Templates - Static definitions for common weapon types (Longsword, Dagger, etc.)
+export const weaponTemplates = sqliteTable('weapon_templates', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  handedness: text('handedness').$type<'1H' | '2H'>().notNull(),
+  damageMode: text('damage_mode').$type<'single' | 'dual'>().notNull(),
+  modeCode: text('mode_code')
+    .$type<
+      'none' | 'thrown_short' | 'thrown_long' | 'versatile' | 'reach_10' | 'reach_15'
+    >()
+    .notNull()
+    .default('none'),
+  description: text('description'),
+  propsJson: text('props_json'), // Store as JSON string for extensibility
+});
+
+// Weapon Template Damage Types - Junction table for template damage types
+export const weaponTemplateDamageTypes = sqliteTable(
+  'weapon_template_damage_types',
+  {
+    weaponTemplateId: text('weapon_template_id')
+      .notNull()
+      .references(() => weaponTemplates.id, { onDelete: 'cascade' }),
+    damageTypeCode: text('damage_type_code')
+      .$type<'S' | 'B' | 'P'>()
+      .notNull(), // S=Slashing, B=Bludgeoning, P=Piercing
+    suggestedStatThreshold: integer('suggested_stat_threshold'), // e.g. 11, 13, 15 or null for None
+    displayOrder: integer('display_order').notNull().default(0),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.weaponTemplateId, table.damageTypeCode],
+    }),
+  })
+);
+
+// Weapons - User-created weapon instances
+export const weapons = sqliteTable('weapons', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(), // User-given name for the weapon
+  weaponTemplateId: text('weapon_template_id').references(
+    () => weaponTemplates.id,
+    { onDelete: 'set null' }
+  ), // Nullable - null means fully custom
+  handedness: text('handedness').$type<'1H' | '2H'>().notNull(),
+  damageMode: text('damage_mode').$type<'single' | 'dual'>().notNull(),
+  modeCode: text('mode_code')
+    .$type<
+      'none' | 'thrown_short' | 'thrown_long' | 'versatile' | 'reach_10' | 'reach_15'
+    >()
+    .notNull()
+    .default('none'),
+  material: text('material')
+    .$type<
+      'steel' | 'silver' | 'gold' | 'truesteel' | 'crystal' | 'obsidian' | 'heartwood'
+    >()
+    .notNull()
+    .default('steel'),
+  createdBy: text('created_by').notNull(), // Display name of creator
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).$defaultFn(
+    () => new Date()
+  ),
+  propsJson: text('props_json'), // Store as JSON string for extensibility
+});
+
+// Weapon Damage Types - Junction table for weapon damage type configs with stat thresholds
+export const weaponDamageTypes = sqliteTable(
+  'weapon_damage_types',
+  {
+    weaponId: text('weapon_id')
+      .notNull()
+      .references(() => weapons.id, { onDelete: 'cascade' }),
+    damageTypeCode: text('damage_type_code')
+      .$type<'S' | 'B' | 'P'>()
+      .notNull(), // S=Slashing, B=Bludgeoning, P=Piercing
+    statThreshold: integer('stat_threshold'), // e.g. 11, 13, 15 or null for None
+    displayOrder: integer('display_order').notNull().default(0),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.weaponId, table.damageTypeCode],
+    }),
+  })
+);
+
+// Junction table for user-weapon ownership
+export const userWeapons = sqliteTable(
+  'user_weapons',
+  {
+    weaponId: text('weapon_id')
+      .notNull()
+      .references(() => weapons.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.userId, table.weaponId],
+    }),
+  })
+);

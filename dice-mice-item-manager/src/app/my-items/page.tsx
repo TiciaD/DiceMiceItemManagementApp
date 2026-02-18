@@ -4,8 +4,11 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { PotionWithTemplate } from '@/types/potions';
 import { ScrollWithTemplate } from '@/types/spells';
+import { WeaponWithDetails } from '@/types/weapons';
 import { MyPotionsSection } from '@/components/my-items/MyPotionsSection';
 import { MyScrollsSection } from '@/components/my-items/MyScrollsSection';
+import { MyWeaponsSection } from '@/components/my-items/MyWeaponsSection';
+import { WeaponBuilderModal } from '@/components/my-items/WeaponBuilderModal';
 
 type ItemCategory = 'potions' | 'scrolls' | 'spells' | 'weapons' | 'shields';
 
@@ -14,7 +17,9 @@ export default function MyItems() {
   const [activeCategory, setActiveCategory] = useState<ItemCategory | null>(null);
   const [potions, setPotions] = useState<PotionWithTemplate[]>([]);
   const [scrolls, setScrolls] = useState<ScrollWithTemplate[]>([]);
+  const [weapons, setWeapons] = useState<WeaponWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isWeaponModalOpen, setIsWeaponModalOpen] = useState(false);
 
   const categories = [
     {
@@ -36,7 +41,7 @@ export default function MyItems() {
       title: '⚔️ Weapons',
       description: 'Your armaments',
       icon: '⚔️',
-      available: false
+      available: true
     },
     {
       id: 'shields' as const,
@@ -77,6 +82,21 @@ export default function MyItems() {
     }
   };
 
+  const fetchWeapons = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/weapons');
+      if (response.ok) {
+        const userWeapons = await response.json();
+        setWeapons(userWeapons);
+      }
+    } catch (error) {
+      console.error('Error fetching weapons:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCategoryClick = async (categoryId: ItemCategory) => {
     if (!categories.find(c => c.id === categoryId)?.available) {
       return; // Don't allow clicking on unavailable categories
@@ -94,7 +114,18 @@ export default function MyItems() {
       await fetchPotions();
     } else if (categoryId === 'scrolls') {
       await fetchScrolls();
+    } else if (categoryId === 'weapons') {
+      await fetchWeapons();
     }
+  };
+
+  const handleWeaponDeleted = (weapon: WeaponWithDetails) => {
+    setWeapons(weapons.filter(w => w.id !== weapon.id));
+  };
+
+  const handleWeaponCreated = () => {
+    // Refresh weapons list
+    fetchWeapons();
   };
 
   const handlePotionConsumed = (potion: PotionWithTemplate) => {
@@ -142,6 +173,20 @@ export default function MyItems() {
           <MyScrollsSection
             scrolls={scrolls}
             onScrollConsumed={handleScrollConsumed}
+          />
+        );
+
+      case 'weapons':
+        return loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading weapons...</span>
+          </div>
+        ) : (
+          <MyWeaponsSection
+            weapons={weapons}
+            onWeaponDeleted={handleWeaponDeleted}
+            onCreateClick={() => setIsWeaponModalOpen(true)}
           />
         );
 
@@ -273,6 +318,13 @@ export default function MyItems() {
             </p>
           </div>
         )}
+
+        {/* Weapon Builder Modal */}
+        <WeaponBuilderModal
+          isOpen={isWeaponModalOpen}
+          onClose={() => setIsWeaponModalOpen(false)}
+          onWeaponCreated={handleWeaponCreated}
+        />
       </main>
     </div>
   );
