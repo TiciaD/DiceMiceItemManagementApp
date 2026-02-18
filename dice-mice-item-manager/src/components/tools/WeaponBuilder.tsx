@@ -245,7 +245,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
         {/* Handedness */}
         <fieldset className="border border-gray-600 rounded-lg p-4">
           <legend className="px-2 text-sm text-gray-400">Handedness</legend>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             {(['1H', '2H'] as Handedness[]).map(h => (
               <label
                 key={h}
@@ -404,7 +404,10 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
 
         {/* Stat Requirements */}
         <fieldset className="border border-gray-600 rounded-lg p-4 md:col-span-2">
-          <legend className="px-2 text-sm text-gray-400">Stat Requirements (per selected type)</legend>
+          <legend className="px-2 text-sm text-gray-400">Stat Requirements</legend>
+          <p className="text-xs text-gray-500 mb-3">
+            Set for each selected damage type. Higher thresholds increase die size.
+          </p>
           <div className="flex flex-wrap gap-4">
             {selectedTypes.map(code => {
               const meta = DAMAGE_TYPE_META[code];
@@ -413,7 +416,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
               return (
                 <div
                   key={code}
-                  className="flex-1 min-w-[260px] border border-gray-700 rounded-lg p-3 bg-gray-900"
+                  className="flex-1 min-w-0 sm:min-w-[260px] border border-gray-700 rounded-lg p-3 bg-gray-900"
                 >
                   <div className="mb-3 font-medium text-white">
                     <span
@@ -422,7 +425,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
                     />
                     {meta.name} requirement
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
                     {rules.map((rule, idx) => (
                       <label
                         key={idx}
@@ -447,9 +450,6 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
               );
             })}
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Higher thresholds increase die size for that type only.
-          </p>
         </fieldset>
       </div>
 
@@ -458,7 +458,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
         <h3 className="text-lg font-semibold text-white mb-4">Damage Dice Ladder</h3>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
           {/* Ladder Steps */}
-          <div className="grid grid-cols-8 gap-2 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-3">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 bg-gradient-to-br sm:bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-3">
             {DICE_LADDER.map((die, stepIdx) => {
               // Find which damage types land on this step
               const typesOnStep = selectedTypes.filter(code => {
@@ -471,7 +471,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
               return (
                 <div
                   key={stepIdx}
-                  className={`relative flex flex-col items-center justify-start p-2 pb-10 rounded-lg border transition-all min-h-[80px] ${
+                  className={`relative flex flex-col items-center justify-start p-2 pb-10 sm:pb-10 rounded-lg border transition-all min-h-[80px] ${
                     isActive
                       ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_8px_rgba(99,102,241,0.2)]'
                       : 'border-gray-700 border-dashed bg-gray-900/50'
@@ -482,7 +482,7 @@ export default function WeaponBuilder({ onSave, isLoading }: WeaponBuilderProps)
                   </span>
 
                   {/* Type chips */}
-                  <div className="absolute bottom-2 left-1 right-1 flex flex-col gap-1">
+                  <div className="absolute bottom-2 left-1 right-1 flex flex-col gap-1 items-center">
                     {typesOnStep.map(code => {
                       const meta = DAMAGE_TYPE_META[code];
                       return (
